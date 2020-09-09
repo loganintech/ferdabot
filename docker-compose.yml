@@ -1,0 +1,19 @@
+version: '3.8'
+services:
+  bot:
+    build: .
+    volumes:
+      - .:/go/src/ferda
+    links:
+      - db
+    restart: always
+    env_file: ferda.env
+  db:
+    image: postgres
+    restart: always
+    environment:
+      POSTGRES_PASSWORD: pass
+    ports:
+      - 5432:5432
+    volumes:
+      - ./postgres-data:/var/lib/postgresql/data
