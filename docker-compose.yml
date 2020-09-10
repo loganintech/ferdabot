@@ -11,8 +11,7 @@ services:
   db:
     image: postgres
     restart: always
-    environment:
-      POSTGRES_PASSWORD: pass
+    env_file: ferda.env
     ports:
       - 5432:5432
     volumes:
