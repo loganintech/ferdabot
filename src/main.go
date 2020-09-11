@@ -5,10 +5,12 @@ import (
 	"os"
 
 	_ "github.com/lib/pq"
+
+	"github.com/loganintech/ferdabot/src/ferdabot"
 )
 
 func main() {
-	bot := NewBot()
+	bot := ferdabot.NewBot()
 
 	if err := bot.Setup(); err != nil {
 		fmt.Printf("Error occurred starting the bot %s\n", err)
@@ -19,5 +21,4 @@ func main() {
 		fmt.Printf("Error closing connection %s\n", closeErr.Error())
 		os.Exit(2)
 	}
-
 }
