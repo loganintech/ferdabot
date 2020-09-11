@@ -47,21 +47,23 @@ func (b *Bot) processNewFerda(s *discordgo.Session, m *discordgo.MessageCreate, 
 	foundString := b.getUserFromText(trimmedText)
 
 	if foundString == "" {
-		if _, err := s.ChannelMessageSend(m.ChannelID, "You must ping someone who is ferda. Ex: `!ferda @Logan is a great guy`"); err != nil {
+		if _, err := s.ChannelMessageSend(m.ChannelID, "You must ping someone who is ferda. Ex: `+ferda @Logan is a great guy`"); err != nil {
 			fmt.Printf("Error occured responding to ping. %s\n", err)
 		}
 		return
 	}
 
 	res, dbErr := b.db.NamedExec(`INSERT INTO ferda (userid, time, reason, creatorid) VALUES (:userid, :time, :reason, :creatorid)`, map[string]interface{}{
-		"userid":    foundString,
-		"time":      time.Now(),
+		"userid": foundString,
+		// Adjust for local time of bot
+		"time":      time.Now().Round(time.Microsecond).Add(-(time.Hour * 7)),
 		"reason":    strings.Join(split[1:], " "),
 		"creatorid": m.Author.ID,
 	})
 	if dbErr != nil {
 		fmt.Printf("Error inserting into the DB %s\n", dbErr)
 	}
+
 	count, _ := res.RowsAffected()
 	if count == 0 {
 		if _, err := s.ChannelMessageSend(m.ChannelID, "No rows effected."); err != nil {

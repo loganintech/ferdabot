@@ -8,3 +8,4 @@ CREATE TABLE ferda
 );
 
 CREATE INDEX userid_idx ON ferda (userid);
+CREATE INDEX creatorid_idx ON ferda (creatorid);
