@@ -30,6 +30,7 @@ type Bot struct {
 	db            *sqlx.DB
 	dg            *discordgo.Session
 	signalChannel chan os.Signal
+	router        MessageCreateRouter
 }
 
 func NewBot() Bot {
@@ -79,6 +80,10 @@ func (b *Bot) Setup() error {
 	b.signalChannel = sc
 	// endregion
 
+	if setupErr := b.SetupRoutes(); setupErr != nil {
+		return setupErr
+	}
+
 	return nil
 }
 
@@ -94,6 +99,34 @@ func (b *Bot) Run() error {
 	<-b.signalChannel
 	if closeErr := b.dg.Close(); closeErr != nil {
 		return closeErr
+	}
+
+	return nil
+}
+
+func (b *Bot) SetupRoutes() error {
+	b.router = NewMessageCreateRouter()
+
+	if ferdaAction := b.router.AddRoute("!echo", b.processEcho); !ferdaAction.Success() {
+		return fmt.Errorf(ferdaAction.LogText)
+	}
+	if ferdaAction := b.router.AddRoute("+ferda", b.processNewFerda); !ferdaAction.Success() {
+		return fmt.Errorf(ferdaAction.LogText)
+	}
+	if ferdaAction := b.router.AddRoute("?ferda", b.processGetFerda); !ferdaAction.Success() {
+		return fmt.Errorf(ferdaAction.LogText)
+	}
+	if ferdaAction := b.router.AddRouteWithAliases([]string{"?help", "!help", "+help"}, processHelp); !ferdaAction.Success() {
+		return fmt.Errorf(ferdaAction.LogText)
+	}
+	if ferdaAction := b.router.AddRoute("?bigferda", b.processDetailedGetFerda); !ferdaAction.Success() {
+		return fmt.Errorf(ferdaAction.LogText)
+	}
+	if ferdaAction := b.router.AddRoute("?ferdasearch", b.processSearchFerda); !ferdaAction.Success() {
+		return fmt.Errorf(ferdaAction.LogText)
+	}
+	if ferdaAction := b.router.AddRoute("-ferda", b.processRemoveFerda); !ferdaAction.Success() {
+		return fmt.Errorf(ferdaAction.LogText)
 	}
 
 	return nil

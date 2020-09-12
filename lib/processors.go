@@ -1,93 +1,119 @@
 package ferdabot
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
-	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
 
-func (b *Bot) processCommands(s *discordgo.Session, m *discordgo.MessageCreate) {
-	fmt.Printf("Message %s\n", m.Content)
-	splitMessage := strings.Split(m.Content, " ")
-	command := splitMessage[0]
-	data := strings.Join(splitMessage[1:], " ")
-
-	var ferdaAction FerdaAction
-	switch command {
-	case "!echo":
-		ferdaAction = b.processEcho(m, data)
-	case "+ferda":
-		ferdaAction = b.processNewFerda(m, data)
-	case "?ferda":
-		ferdaAction = b.processGetFerda(s, data)
-	case "?help", "!help", "+help":
-		ferdaAction = HelpMessage
-	}
-
-	if _, err := s.ChannelMessageSend(m.ChannelID, ferdaAction.DiscordText); err != nil {
-		fmt.Printf("Error sending message: %s to %s\n", ferdaAction.DiscordText, m.ChannelID)
-	}
-
-	fActBytes, _ := json.Marshal(ferdaAction)
-	fAct := string(fActBytes)
-	fmt.Println(fAct)
-}
-
-func (b *Bot) processEcho(m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processEcho(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	for _, phrase := range BannedEchoPhrases {
 		if strings.Contains(trimmedText, phrase) {
-			return EchoFailure.RenderLogText(m.Author.Username, m.Author.ID, trimmedText)
+			return EchoFailure.RenderLogText(m.Author.Username, m.Author.ID, trimmedText).Finalize()
 		}
 	}
 
-	return EchoSuccess.RenderDiscordText(trimmedText)
+	return EchoSuccess.RenderDiscordText(trimmedText).Finalize()
 }
 
-func (b *Bot) processNewFerda(m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processNewFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	split := strings.Split(trimmedText, " ")
-	foundString := b.getUserFromText(trimmedText)
+	foundString := b.getUserFromFirstWord(trimmedText)
 
 	if foundString == "" {
-		return PingFailure.RenderLogText(m.Author.Username)
+		return MentionMissing.RenderLogText(m.Author.Username).Finalize()
 	}
 
-	res, dbErr := b.db.NamedExec(`INSERT INTO ferda (userid, time, reason, creatorid) VALUES (:userid, :time, :reason, :creatorid)`, map[string]interface{}{
-		"userid": foundString,
-		// Adjust for local time of bot
-		"time":      time.Now().Round(time.Microsecond).Add(-(time.Hour * 7)),
-		"reason":    strings.Join(split[1:], " "),
-		"creatorid": m.Author.ID,
-	})
+	ferdaAction := b.insertFerdaEntry(foundString, strings.Join(split[1:], " "), m.Author.ID)
+	if !ferdaAction.Success() {
+		return ferdaAction
+	}
+
+	return NewFerda.RenderDiscordText(m.Author.ID).RenderLogText(m.Author.Username).Finalize()
+}
+
+func (b *Bot) processGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
+	foundUser := b.getUserFromFirstWord(trimmedText)
+	user, err := s.User(foundUser)
+	if err != nil {
+		return UserNotFoundErr.RenderLogText(err).Finalize()
+	}
+
+	ferdaEntry, ferdaAction := b.getFerdaEntry(foundUser, user.ID, user.Username)
+	if !ferdaAction.Success() {
+		return ferdaAction
+	}
+
+	return GetFerda.RenderDiscordText(user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006"), ferdaEntry.Reason).RenderLogText(err).Finalize()
+}
+
+func processHelp(_ *discordgo.Session, _ *discordgo.MessageCreate, _ string) FerdaAction {
+	return HelpMessage
+}
+
+func (b *Bot) processDetailedGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
+	foundUser := b.getUserFromFirstWord(trimmedText)
+	user, err := s.User(foundUser)
+	if err != nil {
+		return UserNotFoundErr.RenderLogText(err).Finalize()
+	}
+
+	ferdaEntry, ferdaAction := b.getFerdaEntry(foundUser, user.ID, user.Username)
+	if !ferdaAction.Success() {
+		return ferdaAction
+	}
+
+	return GetDetailedFerda.RenderDiscordText(ferdaEntry.ID, user.ID, user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006 at 15:04:05 -0700"), ferdaEntry.Reason, ferdaEntry.CreatorID).RenderLogText(err).Finalize()
+}
+
+func (b *Bot) processRemoveFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+	split := strings.Split(trimmedText, " ")
+	if len(split) < 1 {
+		return MissingID.Finalize()
+	}
+	foundID := split[0]
+	res, dbErr := b.db.NamedExec(
+		`DELETE FROM ferda WHERE id = :ferdaid`,
+		map[string]interface{}{
+			"ferdaid": foundID,
+		},
+	)
 	if dbErr != nil {
-		return DBInsertErr.RenderLogText(dbErr)
+		return DBDeleteErr.RenderLogText(dbErr).Finalize()
 	}
 
 	count, _ := res.RowsAffected()
 	if count == 0 {
-		return NoRowDBErr
+		return NoRowDBErr.Finalize()
 	}
 
-	return NewFerda.RenderDiscordText(m.Author.ID).RenderLogText(m.Author.Username)
+	return DeletedFerda.RenderDiscordText(m.Author.ID, foundID).RenderLogText(foundID).Finalize()
 }
 
-func (b *Bot) processGetFerda(s *discordgo.Session, trimmedText string) FerdaAction {
-	foundUser := b.getUserFromText(trimmedText)
+func (b *Bot) processSearchFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
+	data := strings.Split(trimmedText, " ")
+	if len(data) < 2 {
+		return NotEnoughArguments.RenderDiscordText(2).RenderLogText("ferdasearch").Finalize()
+	}
+	foundUser := b.getUserFromFirstWord(data[0])
 	user, err := s.User(foundUser)
 	if err != nil {
-		return UserNotFoundErr.RenderLogText(err)
+		return UserNotFoundErr.RenderLogText(err).Finalize()
 	}
 
-	ferdaEntry := FerdaEntry{}
-	dbErr := b.db.Get(&ferdaEntry, `SELECT * FROM ferda WHERE userid = $1 ORDER BY RANDOM()`, foundUser)
-	if dbErr != nil {
-		if dbErr.Error() == "sql: no rows in result set" {
-			return NotFerdaMessage.RenderDiscordText(user.ID).RenderLogText(user.Username, user.ID)
-		}
-		return DBGetErr.RenderLogText(dbErr)
+	data = data[1:]
+	bodyText := strings.Join(data, " ")
+
+	ferdaEntries, ferdaAction := b.ferdaSearch(foundUser, user.ID, user.Username, bodyText)
+	if !ferdaAction.Success() {
+		return ferdaAction
 	}
 
-	return GetFerda.RenderDiscordText(user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006"), ferdaEntry.Reason).RenderLogText(err)
+	ferdaDetails := MultipleFerdasFound.Finalize()
+	for _, ferdaEntry := range ferdaEntries {
+		ferdaAction := GetDetailedFerda.RenderDiscordText(ferdaEntry.ID, user.ID, user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006 at 15:04:05 -0700"), ferdaEntry.Reason, ferdaEntry.CreatorID).RenderLogText(err).Finalize()
+		ferdaDetails = ferdaDetails.AppendAction(ferdaAction)
+	}
+
+	return ferdaDetails
 }
