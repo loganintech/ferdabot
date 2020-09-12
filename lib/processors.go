@@ -31,7 +31,9 @@ func (b *Bot) processCommands(s *discordgo.Session, m *discordgo.MessageCreate) 
 		fmt.Printf("Error sending message: %s to %s\n", ferdaAction.DiscordText, m.ChannelID)
 	}
 
-	fmt.Println(json.Marshal(ferdaAction))
+	fActBytes, _ := json.Marshal(ferdaAction)
+	fAct := string(fActBytes)
+	fmt.Println(fAct)
 }
 
 func (b *Bot) processEcho(m *discordgo.MessageCreate, trimmedText string) FerdaAction {
