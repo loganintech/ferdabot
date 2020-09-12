@@ -91,7 +91,7 @@ func (a FerdaAction) Success() bool {
 
 func (a FerdaAction) AppendAction(other FerdaAction) FerdaAction {
 	a.LogText = a.LogText + "\n" + other.LogText
-	a.LogOnly = a.LogOnly || other.LogOnly
+	a.LogOnly = a.LogOnly && other.LogOnly
 	a.DiscordText = a.DiscordText + "\n" + other.DiscordText
 	return a
 }
