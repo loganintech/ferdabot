@@ -6,7 +6,7 @@ import (
 
 	_ "github.com/lib/pq"
 
-	"github.com/loganintech/ferdabot/src/ferdabot"
+	ferdabot "github.com/loganintech/ferdabot/lib"
 )
 
 func main() {

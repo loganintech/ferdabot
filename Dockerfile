@@ -1,10 +1,15 @@
-FROM golang:1.15
+FROM golang:1.15 AS builder
 
-WORKDIR /go/src/ferda
-COPY src .
+WORKDIR /go/src/github.com/loganintech/ferdabot
+COPY . .
 
-RUN go get -v github.com/bwmarrin/discordgo
-RUN go get -v github.com/jmoiron/sqlx
-RUN go get -v github.com/lib/pq
+RUN go get -v github.com/bwmarrin/discordgo && \
+    go get -v github.com/jmoiron/sqlx && \
+    go get -v github.com/lib/pq
 
-CMD ["go", "run", "main.go"]
+RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o ferdabot .
+
+FROM alpine:latest
+WORKDIR /ferda/
+COPY --from=builder /go/src/github.com/loganintech/ferdabot/ferdabot .
+CMD ["./ferdabot"]
