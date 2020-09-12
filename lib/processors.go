@@ -1,6 +1,7 @@
 package ferdabot
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 	"time"
@@ -13,44 +14,42 @@ func (b *Bot) processCommands(s *discordgo.Session, m *discordgo.MessageCreate) 
 	splitMessage := strings.Split(m.Content, " ")
 	command := splitMessage[0]
 	data := strings.Join(splitMessage[1:], " ")
+
+	var ferdaAction FerdaAction
 	switch command {
 	case "!echo":
-		b.processEcho(s, m, data)
+		ferdaAction = b.processEcho(m, data)
 	case "+ferda":
-		b.processNewFerda(s, m, data)
+		ferdaAction = b.processNewFerda(m, data)
 	case "?ferda":
-		b.processGetFerda(s, m, data)
+		ferdaAction = b.processGetFerda(s, data)
 	case "?help", "!help", "+help":
-		if _, err := s.ChannelMessageSend(m.ChannelID, "Use `+ferda @User [reason]` to add a ferda, and `?ferda @User` to get a ferda."); err != nil {
-			fmt.Printf("Error sending message to discord %s\n", err)
-		}
+		ferdaAction = HelpMessage
 	}
+
+	if _, err := s.ChannelMessageSend(m.ChannelID, ferdaAction.DiscordText); err != nil {
+		fmt.Printf("Error sending message: %s to %s\n", ferdaAction.DiscordText, m.ChannelID)
+	}
+
+	fmt.Println(json.Marshal(ferdaAction))
 }
 
-func (b *Bot) processEcho(s *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) {
+func (b *Bot) processEcho(m *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	for _, phrase := range BannedEchoPhrases {
 		if strings.Contains(trimmedText, phrase) {
-			if _, err := s.ChannelMessageSend(m.ChannelID, "You shouldn't be trying to send that you dumb fuck."); err != nil {
-				fmt.Printf("Error occured responding to ping. %s\n", err)
-			}
-			return
+			return EchoFailure.RenderLogText(m.Author.Username, m.Author.ID, trimmedText)
 		}
 	}
 
-	if _, err := s.ChannelMessageSend(m.ChannelID, trimmedText); err != nil {
-		fmt.Printf("Error occured responding to ping. %s\n", err)
-	}
+	return EchoSuccess.RenderDiscordText(trimmedText)
 }
 
-func (b *Bot) processNewFerda(s *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) {
+func (b *Bot) processNewFerda(m *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	split := strings.Split(trimmedText, " ")
 	foundString := b.getUserFromText(trimmedText)
 
 	if foundString == "" {
-		if _, err := s.ChannelMessageSend(m.ChannelID, "You must ping someone who is ferda. Ex: `+ferda @Logan is a great guy`"); err != nil {
-			fmt.Printf("Error occured responding to ping. %s\n", err)
-		}
-		return
+		return PingFailure.RenderLogText(m.Author.Username)
 	}
 
 	res, dbErr := b.db.NamedExec(`INSERT INTO ferda (userid, time, reason, creatorid) VALUES (:userid, :time, :reason, :creatorid)`, map[string]interface{}{
@@ -61,43 +60,32 @@ func (b *Bot) processNewFerda(s *discordgo.Session, m *discordgo.MessageCreate, 
 		"creatorid": m.Author.ID,
 	})
 	if dbErr != nil {
-		fmt.Printf("Error inserting into the DB %s\n", dbErr)
+		return DBInsertErr.RenderLogText(dbErr)
 	}
 
 	count, _ := res.RowsAffected()
 	if count == 0 {
-		if _, err := s.ChannelMessageSend(m.ChannelID, "No rows effected."); err != nil {
-			fmt.Printf("Error sending a message to discord.")
-			return
-		}
+		return NoRowDBErr
 	}
 
-	if _, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("Thanks for the new ferda <@!%s>", m.Author.ID)); err != nil {
-		fmt.Printf("Error sending a message to discord.")
-		return
-	}
+	return NewFerda.RenderDiscordText(m.Author.ID).RenderLogText(m.Author.Username)
 }
 
-func (b *Bot) processGetFerda(s *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) {
+func (b *Bot) processGetFerda(s *discordgo.Session, trimmedText string) FerdaAction {
 	foundUser := b.getUserFromText(trimmedText)
 	user, err := s.User(foundUser)
 	if err != nil {
-		fmt.Printf("Couldn't load user from discord: %s\n", err)
+		return UserNotFoundErr.RenderLogText(err)
 	}
 
 	ferdaEntry := FerdaEntry{}
 	dbErr := b.db.Get(&ferdaEntry, `SELECT * FROM ferda WHERE userid = $1 ORDER BY RANDOM()`, foundUser)
 	if dbErr != nil {
 		if dbErr.Error() == "sql: no rows in result set" {
-			if _, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@!%s> is not ferda.", user.ID)); err != nil {
-				fmt.Printf("Error sending message to discord %s\n", err)
-			}
+			return NotFerdaMessage.RenderDiscordText(user.ID).RenderLogText(user.Username, user.ID)
 		}
-		fmt.Printf("Error selecting from table %+v\n", dbErr)
-		return
+		return DBGetErr.RenderLogText(dbErr)
 	}
 
-	if _, err := s.ChannelMessageSend(m.ChannelID, fmt.Sprintf("<@!%s> was ferda on %s for %s", user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006"), ferdaEntry.Reason)); err != nil {
-		fmt.Printf("Error sending message to discord %s\n", err)
-	}
+	return GetFerda.RenderDiscordText(user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006"), ferdaEntry.Reason).RenderLogText(err)
 }
