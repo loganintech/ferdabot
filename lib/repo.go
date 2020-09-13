@@ -45,7 +45,7 @@ func (b *Bot) insertFerdaEntry(foundString, reason, creatorID string) FerdaActio
 }
 
 func (b *Bot) ferdaSearch(foundUser, userID, userName, searchText string) ([]FerdaEntry, FerdaAction) {
-	ferdaEntry := []FerdaEntry{}
+	var ferdaEntry []FerdaEntry
 	dbErr := b.db.Select(
 		&ferdaEntry,
 		`SELECT * FROM ferda WHERE userid = $1 AND reason LIKE $2`,
@@ -63,4 +63,23 @@ func (b *Bot) ferdaSearch(foundUser, userID, userName, searchText string) ([]Fer
 	}
 
 	return ferdaEntry, DBSuccess.Finalize()
+}
+
+func (b *Bot) deleteFerda(foundID string) FerdaAction {
+	res, dbErr := b.db.NamedExec(
+		`DELETE FROM ferda WHERE id = :ferdaid`,
+		map[string]interface{}{
+			"ferdaid": foundID,
+		},
+	)
+	if dbErr != nil {
+		return DBDeleteErr.RenderLogText(dbErr).Finalize()
+	}
+
+	count, _ := res.RowsAffected()
+	if count == 0 {
+		return NoRowDBErr.Finalize()
+	}
+
+	return DBSuccess
 }

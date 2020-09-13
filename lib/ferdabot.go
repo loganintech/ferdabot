@@ -1,6 +1,7 @@
 package ferdabot
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -30,7 +31,7 @@ type Bot struct {
 	db            *sqlx.DB
 	dg            *discordgo.Session
 	signalChannel chan os.Signal
-	router        MessageCreateRouter
+	treeRouter    CommandMatcher
 }
 
 func NewBot() Bot {
@@ -78,11 +79,25 @@ func (b *Bot) Setup() error {
 	b.db = dbCon
 	b.dg = dg
 	b.signalChannel = sc
-	// endregion
-
-	if setupErr := b.SetupRoutes(); setupErr != nil {
-		return setupErr
+	b.treeRouter = NewCommandMatcher()
+	routes := []MessageCreateRoute{
+		{key: "!echo", f: b.processEcho, desc: "Echo any message (not in the blacklist)."},
+		{key: "+ferda", f: b.processNewFerda, desc: "Add a new ferda with a reason. Ex: `+ferda @Logan for creating ferdabot.`"},
+		{key: "?ferda", f: b.processGetFerda, desc: "Get a ferda for a person. Ex: `?ferda @Logan`"},
+		{key: "?bigferda", f: b.processDetailedGetFerda, desc: "Get a detailed ferda for a person. Ex: `?bigferda @Logan`"},
+		{key: "?ferdasearch", f: b.processSearchFerda, desc: "Search for ferdas for a person containing some text. Ex: `?ferdasearch @Logan ferdabot`"},
+		{key: "-ferda", f: b.processRemoveFerda, desc: "Remove a ferda by its ID: `-ferda 7`"},
+		{key: "?help", f: b.processHelp, desc: "Sends this help message."},
+		{key: "!help", f: b.processHelp, desc: "Sends this help message."},
+		{key: "+help", f: b.processHelp, desc: "Sends this help message."},
 	}
+	for i, route := range routes {
+		if action := b.treeRouter.AddCommand(route.key, &routes[i]); !action.Success() {
+			b.ProcessFerdaAction(action, nil, nil)
+		}
+	}
+
+	// endregion
 
 	return nil
 }
@@ -104,30 +119,15 @@ func (b *Bot) Run() error {
 	return nil
 }
 
-func (b *Bot) SetupRoutes() error {
-	b.router = NewMessageCreateRouter()
-
-	if ferdaAction := b.router.AddRoute("!echo", b.processEcho); !ferdaAction.Success() {
-		return fmt.Errorf(ferdaAction.LogText)
+func (b *Bot) ProcessFerdaAction(act FerdaAction, s *discordgo.Session, m *discordgo.MessageCreate) {
+	if !act.LogOnly && (s != nil || m != nil) {
+		if _, err := s.ChannelMessageSend(m.ChannelID, act.DiscordText); err != nil {
+			fmt.Printf("Error sending message: %s to %s\n", act.DiscordText, m.ChannelID)
+		}
 	}
-	if ferdaAction := b.router.AddRoute("+ferda", b.processNewFerda); !ferdaAction.Success() {
-		return fmt.Errorf(ferdaAction.LogText)
+	if !act.Success() {
+		fTreeActBytes, _ := json.Marshal(act)
+		fTreeAct := string(fTreeActBytes)
+		fmt.Println(fTreeAct)
 	}
-	if ferdaAction := b.router.AddRoute("?ferda", b.processGetFerda); !ferdaAction.Success() {
-		return fmt.Errorf(ferdaAction.LogText)
-	}
-	if ferdaAction := b.router.AddRouteWithAliases([]string{"?help", "!help", "+help"}, processHelp); !ferdaAction.Success() {
-		return fmt.Errorf(ferdaAction.LogText)
-	}
-	if ferdaAction := b.router.AddRoute("?bigferda", b.processDetailedGetFerda); !ferdaAction.Success() {
-		return fmt.Errorf(ferdaAction.LogText)
-	}
-	if ferdaAction := b.router.AddRoute("?ferdasearch", b.processSearchFerda); !ferdaAction.Success() {
-		return fmt.Errorf(ferdaAction.LogText)
-	}
-	if ferdaAction := b.router.AddRoute("-ferda", b.processRemoveFerda); !ferdaAction.Success() {
-		return fmt.Errorf(ferdaAction.LogText)
-	}
-
-	return nil
 }

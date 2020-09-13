@@ -1,0 +1,28 @@
+FROM golang:1.15 AS builder
+
+RUN go get github.com/go-delve/delve/cmd/dlv
+
+WORKDIR /go/src/github.com/loganintech/ferdabot
+COPY . .
+
+RUN go get -v github.com/bwmarrin/discordgo
+RUN go get -v github.com/jmoiron/sqlx
+RUN go get -v github.com/lib/pq
+
+RUN CGO_ENABLED=0 GOOS=linux go build -gcflags="all=-N -l" -a -installsuffix cgo -o ferdabot .
+
+FROM debian:buster
+
+EXPOSE 8000 40000
+
+ADD ./cert.crt /usr/local/share/ca-certificates/cert.crt
+RUN chmod 644 /usr/local/share/ca-certificates/cert.crt
+RUN apt-get update
+RUN apt-get install -y --no-install-recommends ca-certificates
+
+RUN /usr/sbin/update-ca-certificates
+
+WORKDIR /ferda
+COPY --from=builder /go/src/github.com/loganintech/ferdabot/ferdabot .
+COPY --from=builder /go/bin/dlv .
+CMD ["./dlv", "exec", "--listen=:40000", "--headless=true", "--api-version=2", "--accept-multiclient", "./ferdabot"]

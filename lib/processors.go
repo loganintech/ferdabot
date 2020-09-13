@@ -1,6 +1,7 @@
 package ferdabot
 
 import (
+	"sort"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -47,10 +48,6 @@ func (b *Bot) processGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, 
 	return GetFerda.RenderDiscordText(user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006"), ferdaEntry.Reason).RenderLogText(err).Finalize()
 }
 
-func processHelp(_ *discordgo.Session, _ *discordgo.MessageCreate, _ string) FerdaAction {
-	return HelpMessage
-}
-
 func (b *Bot) processDetailedGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	foundUser := b.getUserFromFirstWord(trimmedText)
 	user, err := s.User(foundUser)
@@ -72,19 +69,10 @@ func (b *Bot) processRemoveFerda(_ *discordgo.Session, m *discordgo.MessageCreat
 		return MissingID.Finalize()
 	}
 	foundID := split[0]
-	res, dbErr := b.db.NamedExec(
-		`DELETE FROM ferda WHERE id = :ferdaid`,
-		map[string]interface{}{
-			"ferdaid": foundID,
-		},
-	)
-	if dbErr != nil {
-		return DBDeleteErr.RenderLogText(dbErr).Finalize()
-	}
 
-	count, _ := res.RowsAffected()
-	if count == 0 {
-		return NoRowDBErr.Finalize()
+	deleteAction := b.deleteFerda(foundID)
+	if !deleteAction.Success() {
+		return deleteAction
 	}
 
 	return DeletedFerda.RenderDiscordText(m.Author.ID, foundID).RenderLogText(foundID).Finalize()
@@ -112,8 +100,20 @@ func (b *Bot) processSearchFerda(s *discordgo.Session, _ *discordgo.MessageCreat
 	ferdaDetails := MultipleFerdasFound.Finalize()
 	for _, ferdaEntry := range ferdaEntries {
 		ferdaAction := GetDetailedFerda.RenderDiscordText(ferdaEntry.ID, user.ID, user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006 at 15:04:05 -0700"), ferdaEntry.Reason, ferdaEntry.CreatorID).RenderLogText(err).Finalize()
-		ferdaDetails = ferdaDetails.AppendAction(ferdaAction)
+		ferdaDetails = ferdaDetails.CombineActions(ferdaAction)
 	}
 
 	return ferdaDetails
+}
+
+func (b *Bot) processHelp(_ *discordgo.Session, _ *discordgo.MessageCreate, _ string) FerdaAction {
+	buildMsg := HelpHeader
+	action := b.treeRouter.GetHelpActions()
+	if action == nil {
+		return RouteNotFound.Finalize()
+	}
+	newDiscordText := strings.Split(action.DiscordText, "\n")
+	sort.Strings(newDiscordText[1:])
+	action.DiscordText = strings.Join(newDiscordText, "\n")
+	return buildMsg.CombineActions(*action)
 }

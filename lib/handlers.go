@@ -1,8 +1,6 @@
 package ferdabot
 
 import (
-	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/bwmarrin/discordgo"
@@ -20,14 +18,6 @@ func (b *Bot) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	command := splitMessage[0]
 	data := strings.Join(splitMessage[1:], " ")
 
-	ferdaAction := b.router.ExecuteRoute(command, s, m, data)
-	if !ferdaAction.LogOnly {
-		if _, err := s.ChannelMessageSend(m.ChannelID, ferdaAction.DiscordText); err != nil {
-			fmt.Printf("Error sending message: %s to %s\n", ferdaAction.DiscordText, m.ChannelID)
-		}
-	}
-
-	fActBytes, _ := json.Marshal(ferdaAction)
-	fAct := string(fActBytes)
-	fmt.Println(fAct)
+	treeFerdaAction := b.treeRouter.ExecuteCommand(command, s, m, data)
+	b.ProcessFerdaAction(treeFerdaAction, s, m)
 }

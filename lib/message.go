@@ -89,9 +89,13 @@ func (a FerdaAction) Success() bool {
 	return a.success
 }
 
-func (a FerdaAction) AppendAction(other FerdaAction) FerdaAction {
+func (a FerdaAction) CombineActions(other FerdaAction) FerdaAction {
 	a.LogText = a.LogText + "\n" + other.LogText
 	a.LogOnly = a.LogOnly && other.LogOnly
 	a.DiscordText = a.DiscordText + "\n" + other.DiscordText
 	return a
+}
+
+func (a FerdaAction) Equals(other FerdaAction) bool {
+	return a.DiscordText == other.DiscordText && a.LogText == other.LogText && a.LogOnly == other.LogOnly
 }

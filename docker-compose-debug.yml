@@ -3,15 +3,20 @@ services:
   bot:
     build:
       context: .
-      dockerfile: Dockerfile
+      dockerfile: Dockerfile-debug
       args:
         - rm=false
-    volumes:
-      - .:/go/src/ferda
     links:
       - db
     restart: always
     env_file: ferda.env
+    security_opt:
+      - apparmor=unconfined
+    cap_add:
+      - SYS_PTRACE
+    ports:
+      - 8000:8000
+      - 40000:40000
   db:
     image: postgres
     restart: always
