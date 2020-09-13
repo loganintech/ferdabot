@@ -1,3 +1,4 @@
 ferda.env
+cert.crt
 /postgres-data/
 /.idea/
