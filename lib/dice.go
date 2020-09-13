@@ -84,7 +84,7 @@ func processDice(diceText string) FerdaAction {
 			// Actually roll it
 			val := rand.Int63n(int64(sides)) + 1 + int64(add)
 			// Create a FerdaAction with the results
-			newBody := DiceBody.RenderDiscordText(count, sides, val, addTxt).RenderLogText(count, sides, val, addTxt).Finalize()
+			newBody := DiceBody.RenderDiscordText(count, sides, addTxt, val).RenderLogText(count, sides, addTxt, val).Finalize()
 			if diceBody == nil {
 				diceBody = &newBody
 			} else {
