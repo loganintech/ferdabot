@@ -2,6 +2,7 @@ package ferdabot
 
 import "fmt"
 
+// FerdaAction represents a finalized Action
 type FerdaAction struct {
 	DiscordText string `json:"discord_text"`
 	LogText     string `json:"log_text"`
@@ -11,6 +12,7 @@ type FerdaAction struct {
 	success bool
 }
 
+// FerdaActionBuilder lets you build a ferda action
 type FerdaActionBuilder struct {
 	// text data
 	discordText       string
@@ -23,20 +25,24 @@ type FerdaActionBuilder struct {
 	LogOnly bool
 }
 
+// FerdaSuccess returns a success FerdaAction
 func FerdaSuccess(dText, lText string) FerdaActionBuilder {
 	return newFerdaAction(dText, lText).SetSuccess()
 }
 
+// FerdaFailure returns a fail FerdaAction
 func FerdaFailure(dText, lText string) FerdaActionBuilder {
 	return newFerdaAction(dText, lText).SetFail()
 }
 
+// FerdaLogOnly returns a log only FerdaAction
 func FerdaLogOnly(lText string) FerdaActionBuilder {
 	a := newFerdaAction("", lText)
 	a.LogOnly = true
 	return a
 }
 
+// newFerdaAction lets you set a basic FerdaAction
 func newFerdaAction(dText, lText string) FerdaActionBuilder {
 	return FerdaActionBuilder{
 		Success:           false,
@@ -46,26 +52,31 @@ func newFerdaAction(dText, lText string) FerdaActionBuilder {
 	}
 }
 
+// SetSuccess returns an identical FerdaAction with the success set to true
 func (a FerdaActionBuilder) SetSuccess() FerdaActionBuilder {
 	a.Success = true
 	return a
 }
 
+// SetFail returns an identical FerdaAction with the success set to false
 func (a FerdaActionBuilder) SetFail() FerdaActionBuilder {
 	a.Success = false
 	return a
 }
 
+// RenderDiscordText formats the discordTextFormat to discordText
 func (a FerdaActionBuilder) RenderDiscordText(d ...interface{}) FerdaActionBuilder {
 	a.discordText = fmt.Sprintf(a.discordTextFormat, d...)
 	return a
 }
 
+// RenderLogText formats the logTextFormat to logText
 func (a FerdaActionBuilder) RenderLogText(l ...interface{}) FerdaActionBuilder {
 	a.logText = fmt.Sprintf(a.logTextFormat, l...)
 	return a
 }
 
+// Finalize consumes the FerdaActionBuilder to return a finalized FerdaAction
 func (a FerdaActionBuilder) Finalize() FerdaAction {
 	if a.discordText == "" {
 		a.discordText = a.discordTextFormat
@@ -81,14 +92,17 @@ func (a FerdaActionBuilder) Finalize() FerdaAction {
 	}
 }
 
+// Finalize on a FerdaAction does nothing
 func (a FerdaAction) Finalize() FerdaAction {
 	return a
 }
 
+// Success on a FerdaAction returns whether it was a success
 func (a FerdaAction) Success() bool {
 	return a.success
 }
 
+// CombineActions returns a FerdaAction with the messages combined
 func (a FerdaAction) CombineActions(other FerdaAction) FerdaAction {
 	a.LogText = a.LogText + "\n" + other.LogText
 	a.LogOnly = a.LogOnly && other.LogOnly
@@ -96,6 +110,7 @@ func (a FerdaAction) CombineActions(other FerdaAction) FerdaAction {
 	return a
 }
 
+// Equals returns the similarity between two FerdaAction's
 func (a FerdaAction) Equals(other FerdaAction) bool {
 	return a.DiscordText == other.DiscordText && a.LogText == other.LogText && a.LogOnly == other.LogOnly
 }
