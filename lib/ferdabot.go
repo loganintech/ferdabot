@@ -55,7 +55,7 @@ func (b *Bot) Setup() error {
 	}
 
 	dg.AddHandler(b.messageCreate)
-	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages)
+	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsDirectMessages)
 	// endregion
 
 	// region DB
@@ -90,6 +90,7 @@ func (b *Bot) Setup() error {
 		{key: "?help", f: b.processHelp, desc: "Sends this help message."},
 		{key: "!help", f: b.processHelp, desc: "Sends this help message."},
 		{key: "+help", f: b.processHelp, desc: "Sends this help message."},
+		{key: "!dice", f: b.processDice, desc: "Roll a dice in the format 1d6."},
 	}
 	for i, route := range routes {
 		if action := b.treeRouter.AddCommand(route.key, &routes[i]); !action.Success() {
