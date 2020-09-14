@@ -1,6 +1,6 @@
 
 silent:
-	docker-compose --detatch -f docker-compose.yml up
+	docker-compose -f docker-compose.yml up --detatch
 
 up:
 	docker-compose -f docker-compose.yml up
