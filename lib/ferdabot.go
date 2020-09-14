@@ -106,7 +106,7 @@ func (b *Bot) Setup() error {
 		{key: "!help", f: b.processHelp, desc: "Sends this help message."},
 		{key: "+help", f: b.processHelp, desc: "Sends this help message."},
 		{key: "!dice", f: b.processDice, desc: "Roll a dice in the format 1d6."},
-		{key: "!choice", f: b.processChoice, desc: "Choose a random item from a list. Format `!choose Item1 Item2 Item3 ...`"},
+		{key: "!choice", f: b.processChoice, desc: "Choose a random item from a list. Format `!choose Item1|Item2 | Item3| ...`"},
 	}
 	for i, route := range routes {
 		if action := b.treeRouter.AddCommand(route.key, &routes[i]); !action.Success() {
