@@ -11,6 +11,7 @@ var (
 	DeletedFerda     = FerdaSuccess("Deleted a ferda successfully <@!%s>. ID: [%s]", "Deleted a ferda with id %d.")
 	HelpBody         = FerdaSuccess("> [%s] %s", "Help message body.")
 	DiceBody         = FerdaSuccess("Rolling [%dd%d%s]: %d", "Rolling [%dd%d%s]: %d")
+	ChoiceResult     = FerdaSuccess("The choice is: %s", "Chose %s from random array %v")
 
 	// Failure
 	MentionMissing     = FerdaFailure("You must ping an associated user. Ex: `+ferda @Logan is a great guy` or `?ferda @Logan`", "Failed to find a username in message %s.")
