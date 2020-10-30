@@ -8,6 +8,7 @@ type FerdaAction struct {
 	LogText     string `json:"log_text"`
 
 	// flags
+	DontLog bool
 	LogOnly bool
 	success bool
 }
@@ -21,6 +22,7 @@ type FerdaActionBuilder struct {
 	logTextFormat     string
 
 	// flags
+	DontLog bool
 	Success bool
 	LogOnly bool
 }
@@ -49,6 +51,7 @@ func newFerdaAction(dText, lText string) FerdaActionBuilder {
 		discordTextFormat: dText,
 		logTextFormat:     lText,
 		LogOnly:           false,
+		DontLog:           false,
 	}
 }
 
@@ -61,6 +64,12 @@ func (a FerdaActionBuilder) SetSuccess() FerdaActionBuilder {
 // SetFail returns an identical FerdaAction with the success set to false
 func (a FerdaActionBuilder) SetFail() FerdaActionBuilder {
 	a.Success = false
+	return a
+}
+
+// SetFail returns an identical FerdaAction with the success set to false
+func (a FerdaActionBuilder) SetLogOnly(val bool) FerdaActionBuilder {
+	a.LogOnly = val
 	return a
 }
 
@@ -87,6 +96,7 @@ func (a FerdaActionBuilder) Finalize() FerdaAction {
 	return FerdaAction{
 		DiscordText: a.discordText,
 		LogText:     a.logText,
+		DontLog:     a.DontLog,
 		LogOnly:     a.LogOnly,
 		success:     a.Success,
 	}
@@ -107,6 +117,7 @@ func (a FerdaAction) CombineActions(other FerdaAction) FerdaAction {
 	a.LogText = a.LogText + "\n" + other.LogText
 	a.LogOnly = a.LogOnly && other.LogOnly
 	a.DiscordText = a.DiscordText + "\n" + other.DiscordText
+	a.DontLog = a.DontLog && other.DontLog
 	return a
 }
 

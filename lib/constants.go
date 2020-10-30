@@ -26,11 +26,16 @@ var (
 	BadIDFormat        = FerdaFailure("ID was not in the correct format: %s", "ID was not in the correct format: %s")
 
 	// LogOnly Fail
-	AddRouteFailed = FerdaLogOnly("Adding route failed, %s already exists").SetFail()
-	RouteNotFound  = FerdaLogOnly("Route %s was not found")
+	AddRouteFailed             = FerdaLogOnly("Adding route failed, %s already exists").SetFail()
+	RouteNotFound              = FerdaLogOnly("Route %s was not found").SetFail()
+	SpotifyPlaylistLoadError   = FerdaLogOnly("Spotify Playlist not Found [%v]").SetFail()
+	SpotifyCreatePlaylistError = FerdaLogOnly("Spotify Playlist Creation Failed [%v]").SetFail()
+	SpotifyAddToPlaylistError  = FerdaLogOnly("Spotify Tracks failed to Add to Playlist [%v]").SetFail()
+	SpotifyUserNotFound        = FerdaLogOnly("Current Spotify user Not Set [%v]").SetFail()
 
 	// LogOnly Success
-	AddRouteSuccess = FerdaLogOnly("Adding route complete: %s").SetSuccess()
+	SpotifySongAdded = FerdaLogOnly("Song [%s] Added to Playlist: %s").SetSuccess()
+	AddRouteSuccess  = FerdaLogOnly("Adding route complete: %s").SetSuccess()
 
 	// Pre-Finalized Success
 	HelpHeader          = FerdaSuccess("Here's the list of available commands:", "Help message sent.").Finalize()
@@ -40,7 +45,12 @@ var (
 	//RoutesFinished      = FerdaLogOnly("Routes finished setup without error.").SetSuccess().Finalize()
 
 	// Pre-Finalized Failure
-	NoRowDBErr        = FerdaFailure("Database error occurred, please contact Logan.", "No rows affected in DB.").Finalize()
-	DBResultsEmpty    = FerdaFailure("No entries found.", "No rows returned in result set.")
-	TooManyDiceToRoll = FerdaFailure("You can't roll that many dice.", "User wanted to roll too many dice.").SetFail().Finalize()
+	NoRowDBErr              = FerdaFailure("Database error occurred, please contact Logan.", "No rows affected in DB.").Finalize()
+	DBResultsEmpty          = FerdaFailure("No entries found.", "No rows returned in result set.")
+	TooManyDiceToRoll       = FerdaFailure("You can't roll that many dice.", "User wanted to roll too many dice.").SetFail().Finalize()
+	SpotifyPlaylistNotFound = FerdaLogOnly("Spotify Playlist not Found").SetFail().Finalize()
+	FromChannelNotFound     = FerdaLogOnly("From Channel not Found").SetFail().Finalize()
+	PlaylistIDChannelClosed = FerdaLogOnly("PlaylistID Channel Not Closed").SetFail().Finalize()
+
+	DontLog = FerdaActionBuilder{DontLog: true}.Finalize()
 )

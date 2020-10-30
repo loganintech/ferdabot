@@ -15,6 +15,11 @@ func (b *Bot) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
+	if spotifyAction := b.processSpotifyLink(s, m); spotifyAction != nil {
+		b.ProcessFerdaAction(*spotifyAction, s, m)
+		return
+	}
+
 	// Split our command out
 	splitMessage := strings.Split(m.Content, " ")
 	command := splitMessage[0]

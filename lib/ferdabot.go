@@ -3,6 +3,8 @@ package ferdabot
 import (
 	"encoding/json"
 	"fmt"
+	"log"
+	"net/http"
 	"os"
 	"os/signal"
 	"regexp"
@@ -11,6 +13,15 @@ import (
 
 	"github.com/bwmarrin/discordgo"
 	"github.com/jmoiron/sqlx"
+	"github.com/zmb3/spotify"
+)
+
+const redirectURI = "http://localhost:8080/callback"
+
+var (
+	auth  = spotify.NewAuthenticator(redirectURI, spotify.ScopePlaylistModifyPrivate, spotify.ScopePlaylistModifyPublic, spotify.ScopePlaylistReadPrivate, spotify.ScopePlaylistReadCollaborative)
+	ch    = make(chan *spotify.Client)
+	state = "awd123"
 )
 
 // Look for a number
@@ -31,10 +42,11 @@ type FerdaEntry struct {
 
 // Bot contains or discord and database connections
 type Bot struct {
-	db            *sqlx.DB
-	dg            *discordgo.Session
-	signalChannel chan os.Signal
-	treeRouter    CommandMatcher
+	db                *sqlx.DB
+	dg                *discordgo.Session
+	signalChannel     chan os.Signal
+	treeRouter        CommandMatcher
+	spotifyConnection spotify.Client
 }
 
 func NewBot() Bot {
@@ -87,33 +99,38 @@ func (b *Bot) Setup() error {
 	signal.Notify(sc, os.Interrupt, syscall.SIGINT, syscall.SIGTERM, os.Kill)
 	// endregion
 
+	//region Spotify
+	http.HandleFunc("/callback", performSpotifyAuth)
+	spotifyClient := <-ch
+	//endregion
+
 	// region Assignments
 	b.db = dbCon
 	b.dg = dg
 	b.signalChannel = sc
 	b.treeRouter = NewCommandMatcher()
+	b.spotifyConnection = *spotifyClient
 	// endregion
 
 	// region Routes
 	routes := []MessageCreateRoute{
-		{key: "!echo", f: b.processEcho, desc: "Echo any message (not in the blacklist)."},
 		{key: "+ferda", f: b.processNewFerda, desc: "Add a new ferda with a reason. Ex: `+ferda @Logan for creating ferdabot.`"},
 		{key: "?ferda", f: b.processGetFerda, desc: "Get a ferda for a person. Ex: `?ferda @Logan`"},
+		{key: "-ferda", f: b.processRemoveFerda, desc: "Remove a ferda by its ID: `-ferda 7`"},
 		{key: "?bigferda", f: b.processDetailedGetFerda, desc: "Get a detailed ferda for a person. Ex: `?bigferda @Logan`"},
 		{key: "?ferdasearch", f: b.processSearchFerda, desc: "Search for ferdas for a person containing some text. Ex: `?ferdasearch @Logan ferdabot`"},
-		{key: "-ferda", f: b.processRemoveFerda, desc: "Remove a ferda by its ID: `-ferda 7`"},
+		{key: "!choice", f: b.processChoice, desc: "Choose a random item from a list. Format `!choose Item1|Item2 | Item3| ...`"},
+		{key: "!dice", f: b.processDice, desc: "Roll a dice in the format 1d6."},
+		{key: "!echo", f: b.processEcho, desc: "Echo any message (not in the blacklist)."},
+		{key: "+help", f: b.processHelp, desc: "Sends this help message."},
 		{key: "?help", f: b.processHelp, desc: "Sends this help message."},
 		{key: "!help", f: b.processHelp, desc: "Sends this help message."},
-		{key: "+help", f: b.processHelp, desc: "Sends this help message."},
-		{key: "!dice", f: b.processDice, desc: "Roll a dice in the format 1d6."},
-		{key: "!choice", f: b.processChoice, desc: "Choose a random item from a list. Format `!choose Item1|Item2 | Item3| ...`"},
 	}
 	for i, route := range routes {
 		if action := b.treeRouter.AddCommand(route.key, &routes[i]); !action.Success() {
 			b.ProcessFerdaAction(action, nil, nil)
 		}
 	}
-
 	// endregion
 
 	return nil
@@ -141,6 +158,10 @@ func (b *Bot) Run() error {
 }
 
 func (b *Bot) ProcessFerdaAction(act FerdaAction, s *discordgo.Session, m *discordgo.MessageCreate) {
+	if act.DontLog {
+		return
+	}
+
 	// If we want to send to discord and have a session / message
 	if !act.LogOnly && (s != nil || m != nil) {
 		// Send to discord
@@ -156,4 +177,24 @@ func (b *Bot) ProcessFerdaAction(act FerdaAction, s *discordgo.Session, m *disco
 		fTreeAct := string(fTreeActBytes)
 		fmt.Println(fTreeAct)
 	}
+}
+
+func performSpotifyAuth(w http.ResponseWriter, r *http.Request) {
+	url := auth.AuthURL(state)
+	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+	go http.ListenAndServe(":8080", nil)
+
+	tok, err := auth.Token(state, r)
+	if err != nil {
+		http.Error(w, "Couldn't get token", http.StatusForbidden)
+		log.Fatal(err)
+	}
+	if st := r.FormValue("state"); st != state {
+		http.NotFound(w, r)
+		log.Fatalf("State mismatch: %s != %s\n", st, state)
+	}
+	// use the token to get an authenticated client
+	client := auth.NewClient(tok)
+	w.Header().Set("Content-Type", "text/html")
+	ch <- &client
 }

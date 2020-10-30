@@ -7,3 +7,7 @@ up:
 
 down:
 	docker-compose -f docker-compose.yml down
+
+rebuild:
+	docker-compose build
+	docker-compose -f docker-compose.yml up
