@@ -80,7 +80,6 @@ func (n *CommandNode) AddCommand(key []rune, command *MessageCreateRoute) FerdaA
 
 	// And recurse
 	return newNode.AddCommand(key[1:], command)
-
 }
 
 func (n *CommandNode) ExecuteCommand(key []rune, s *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {

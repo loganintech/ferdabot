@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/signal"
 	"regexp"
+	"strconv"
 	"syscall"
 	"time"
 
@@ -31,6 +32,12 @@ var BannedEchoPhrases = []string{
 	"@here",
 }
 
+// ConfigEntry is a struct to represent configuration parameters
+type ConfigEntry struct {
+	Key string `db:"key"`
+	Val string `db:"val"`
+}
+
 // FerdaEntry represents the database structure of a ferda entry
 type FerdaEntry struct {
 	ID        int64     `db:"id"`
@@ -46,7 +53,7 @@ type Bot struct {
 	dg                *discordgo.Session
 	signalChannel     chan os.Signal
 	treeRouter        CommandMatcher
-	spotifyConnection spotify.Client
+	spotifyConnection *spotify.Client
 }
 
 func NewBot() Bot {
@@ -76,6 +83,7 @@ func (b *Bot) Setup() error {
 	dg.AddHandler(b.messageCreate)
 	// And assign the intents
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsDirectMessages)
+	b.dg = dg
 	// endregion
 
 	// region DB
@@ -90,6 +98,7 @@ func (b *Bot) Setup() error {
 	if sqlErr != nil {
 		return fmt.Errorf("Error connecting to DB: %s\n", sqlErr)
 	}
+	b.db = dbCon
 	// endregion
 
 	// region OS Signal Channel
@@ -100,16 +109,12 @@ func (b *Bot) Setup() error {
 	// endregion
 
 	//region Spotify
-	http.HandleFunc("/callback", performSpotifyAuth)
-	spotifyClient := <-ch
+	b.initializeSpotify()
 	//endregion
 
 	// region Assignments
-	b.db = dbCon
-	b.dg = dg
 	b.signalChannel = sc
 	b.treeRouter = NewCommandMatcher()
-	b.spotifyConnection = *spotifyClient
 	// endregion
 
 	// region Routes
@@ -119,7 +124,7 @@ func (b *Bot) Setup() error {
 		{key: "-ferda", f: b.processRemoveFerda, desc: "Remove a ferda by its ID: `-ferda 7`"},
 		{key: "?bigferda", f: b.processDetailedGetFerda, desc: "Get a detailed ferda for a person. Ex: `?bigferda @Logan`"},
 		{key: "?ferdasearch", f: b.processSearchFerda, desc: "Search for ferdas for a person containing some text. Ex: `?ferdasearch @Logan ferdabot`"},
-		{key: "!choice", f: b.processChoice, desc: "Choose a random item from a list. Format `!choose Item1|Item2 | Item3| ...`"},
+		{key: "!choice", f: b.processChoice, desc: "Choose a random item from a list. Format `!choose Item1|Item2 | Item3| Item 4 | ...`"},
 		{key: "!dice", f: b.processDice, desc: "Roll a dice in the format 1d6."},
 		{key: "!echo", f: b.processEcho, desc: "Echo any message (not in the blacklist)."},
 		{key: "+help", f: b.processHelp, desc: "Sends this help message."},
@@ -179,19 +184,46 @@ func (b *Bot) ProcessFerdaAction(act FerdaAction, s *discordgo.Session, m *disco
 	}
 }
 
-func performSpotifyAuth(w http.ResponseWriter, r *http.Request) {
-	url := auth.AuthURL(state)
-	fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
-	go http.ListenAndServe(":8080", nil)
+func (b *Bot) initializeSpotify() {
+	spotifyEnabledStr, dbAction := b.getConfigEntry("spotifyEnabled")
+	if !dbAction.Success() {
+		b.ProcessFerdaAction(dbAction, nil, nil)
+	}
+	if dbAction.DBNotFound() {
+		b.insertConfigEntry("spotifyEnabled", strconv.FormatBool(true))
+	}
+	spotifyEnabled, configErr := strconv.ParseBool(spotifyEnabledStr.Val)
+	spotifyEnabled = spotifyEnabled && configErr == nil
 
+	if spotifyEnabled {
+		spotifyOAuthCode, codeAction := b.getConfigEntry("spotifyCode")
+		if codeAction.Success() {
+			spotifyToken, tokenErr := auth.Exchange(spotifyOAuthCode.Val)
+			if tokenErr == nil {
+				spotifyClient := auth.NewClient(spotifyToken)
+				b.spotifyConnection = &spotifyClient
+			}
+		}
+		if b.spotifyConnection == nil {
+			http.HandleFunc("/callback", b.performFirstTimeSpotifyAuth)
+			go http.ListenAndServe(":8080", nil)
+			url := auth.AuthURL(state)
+			fmt.Println("Please log in to Spotify by visiting the following page in your browser:", url)
+			spotifyClient := <-ch
+			b.spotifyConnection = spotifyClient
+		}
+	}
+}
+
+func (b *Bot) performFirstTimeSpotifyAuth(w http.ResponseWriter, r *http.Request) {
 	tok, err := auth.Token(state, r)
 	if err != nil {
 		http.Error(w, "Couldn't get token", http.StatusForbidden)
 		log.Fatal(err)
 	}
-	if st := r.FormValue("state"); st != state {
-		http.NotFound(w, r)
-		log.Fatalf("State mismatch: %s != %s\n", st, state)
+	if code := r.FormValue("code"); code != "" {
+		insertAct := b.insertConfigEntry("spotifyCode", code)
+		b.ProcessFerdaAction(insertAct, nil, nil)
 	}
 	// use the token to get an authenticated client
 	client := auth.NewClient(tok)

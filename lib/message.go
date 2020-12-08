@@ -8,9 +8,10 @@ type FerdaAction struct {
 	LogText     string `json:"log_text"`
 
 	// flags
-	DontLog bool
-	LogOnly bool
-	success bool
+	DontLog    bool
+	LogOnly    bool
+	success    bool
+	dbNotFound bool
 }
 
 // FerdaActionBuilder lets you build a ferda action
@@ -22,9 +23,10 @@ type FerdaActionBuilder struct {
 	logTextFormat     string
 
 	// flags
-	DontLog bool
-	Success bool
-	LogOnly bool
+	DontLog    bool
+	Success    bool
+	LogOnly    bool
+	DBNotFound bool
 }
 
 // FerdaSuccess returns a success FerdaAction
@@ -118,10 +120,16 @@ func (a FerdaAction) CombineActions(other FerdaAction) FerdaAction {
 	a.LogOnly = a.LogOnly && other.LogOnly
 	a.DiscordText = a.DiscordText + "\n" + other.DiscordText
 	a.DontLog = a.DontLog && other.DontLog
+	a.dbNotFound = a.dbNotFound || other.dbNotFound
 	return a
 }
 
 // Equals returns the similarity between two FerdaAction's
 func (a FerdaAction) Equals(other FerdaAction) bool {
 	return a.DiscordText == other.DiscordText && a.LogText == other.LogText && a.LogOnly == other.LogOnly
+}
+
+// DBNotFound returns the similarity between two FerdaAction's
+func (a FerdaAction) DBNotFound() bool {
+	return a.dbNotFound
 }

@@ -9,3 +9,9 @@ CREATE TABLE ferda
 
 CREATE INDEX userid_idx ON ferda (userid);
 CREATE INDEX creatorid_idx ON ferda (creatorid);
+
+CREATE TABLE config
+(
+    key TEXT PRIMARY KEY NOT NULL UNIQUE,
+    val TEXT NOT NULL
+);

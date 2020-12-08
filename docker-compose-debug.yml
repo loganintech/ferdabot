@@ -15,10 +15,10 @@ services:
     cap_add:
       - SYS_PTRACE
     ports:
-      - 8000:8000
+      - 8080:8080
       - 40000:40000
   db:
-    image: postgres
+    image: postgres:12
     restart: always
     env_file: ferda.env
     ports:

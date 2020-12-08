@@ -32,6 +32,7 @@ var (
 	SpotifyCreatePlaylistError = FerdaLogOnly("Spotify Playlist Creation Failed [%v]").SetFail()
 	SpotifyAddToPlaylistError  = FerdaLogOnly("Spotify Tracks failed to Add to Playlist [%v]").SetFail()
 	SpotifyUserNotFound        = FerdaLogOnly("Current Spotify user Not Set [%v]").SetFail()
+	ParamNotFound              = FerdaLogOnly("ConfigEntry was not found: %s").SetFail()
 
 	// LogOnly Success
 	SpotifySongAdded = FerdaLogOnly("Song [%s] Added to Playlist: %s").SetSuccess()

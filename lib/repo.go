@@ -106,3 +106,53 @@ func (b *Bot) deleteFerda(foundID string) FerdaAction {
 
 	return DBSuccess
 }
+
+// insertConfigEntry inserts something into the config table
+func (b *Bot) insertConfigEntry(param, val string) FerdaAction {
+	// Named Execution insert to the ferda table
+	res, dbErr := b.db.NamedExec(
+		`INSERT INTO config (key, val) VALUES (:key, :val)`,
+		map[string]interface{}{
+			"key": param,
+			// Adjust for local time of bot
+			"val": val,
+		},
+	)
+	// If dbErr isn't nil, return the DBInsertErr log
+	if dbErr != nil {
+		return DBInsertErr.RenderLogText(dbErr).Finalize()
+	}
+
+	// Get the rows affected
+	count, _ := res.RowsAffected()
+	// If the count is 0, return NoRowDB FerdaAction
+	if count == 0 {
+		return NoRowDBErr
+	}
+
+	// return DBSuccess FerdaAction
+	return DBSuccess
+}
+
+// getConfigEntry returns a config entry based on its param name
+func (b *Bot) getConfigEntry(param string) (ConfigEntry, FerdaAction) {
+	entry := ConfigEntry{}
+	dbErr := b.db.Get(
+		&entry,
+		`SELECT * FROM config WHERE key = $1`,
+		param,
+	)
+	// If the dbErr isn't nil
+	if dbErr != nil {
+		// And the error was a not found error
+		if dbErr.Error() == "sql: no rows in result set" {
+			// Return that the user isn't ferda
+			return entry, ParamNotFound.RenderLogText(param).Finalize()
+		}
+		// Return the DBGetErr from the dbErr
+		return entry, DBGetErr.RenderLogText(dbErr).Finalize()
+	}
+
+	// Return the found entry and DBSuccess FerdaAction
+	return entry, DBSuccess
+}
