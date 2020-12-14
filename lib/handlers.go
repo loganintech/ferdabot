@@ -10,7 +10,7 @@ import (
 // messageCreate handles discordgo.MessageCreate events
 func (b *Bot) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	m.Content = strings.TrimSpace(m.Content)
-	// Ignore the message if the bot sent it
+	// Ignore the Message if the bot sent it
 	if m.Author.ID == s.State.User.ID {
 		return
 	}

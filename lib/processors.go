@@ -22,7 +22,7 @@ func (b *Bot) processEcho(_ *discordgo.Session, m *discordgo.MessageCreate, trim
 	return EchoSuccess.RenderDiscordText(trimmedText).Finalize()
 }
 
-// processNewFerda processes a new ferda message
+// processNewFerda processes a new ferda Message
 func (b *Bot) processNewFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	// Split the string
 	split := strings.Split(trimmedText, " ")
@@ -43,7 +43,7 @@ func (b *Bot) processNewFerda(_ *discordgo.Session, m *discordgo.MessageCreate, 
 	return NewFerda.RenderDiscordText(m.Author.ID).RenderLogText(m.Author.Username).Finalize()
 }
 
-// processGetFerda processes a get ferda message
+// processGetFerda processes a get ferda Message
 func (b *Bot) processGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	// Get the found user
 	foundUser := b.getUserFromFirstWord(trimmedText)
@@ -60,11 +60,11 @@ func (b *Bot) processGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, 
 		return ferdaAction
 	}
 
-	// And return the GetFerda message
+	// And return the GetFerda Message
 	return GetFerda.RenderDiscordText(user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006"), ferdaEntry.Reason).RenderLogText(err).Finalize()
 }
 
-// processDetailedGetFerda processes a detailed getferda message
+// processDetailedGetFerda processes a detailed getferda Message
 func (b *Bot) processDetailedGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	// Get the user
 	foundUser := b.getUserFromFirstWord(trimmedText)
@@ -80,11 +80,11 @@ func (b *Bot) processDetailedGetFerda(s *discordgo.Session, _ *discordgo.Message
 		return ferdaAction
 	}
 
-	// And render like a GetFerda message, but with more details
+	// And render like a GetFerda Message, but with more details
 	return GetDetailedFerda.RenderDiscordText(ferdaEntry.ID, user.ID, user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006 at 15:04:05 -0700"), ferdaEntry.Reason, ferdaEntry.CreatorID).RenderLogText(err).Finalize()
 }
 
-// processRemoveFerda processes a remove ferda message
+// processRemoveFerda processes a remove ferda Message
 func (b *Bot) processRemoveFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	// Split into args
 	split := strings.Split(trimmedText, " ")
@@ -104,7 +104,7 @@ func (b *Bot) processRemoveFerda(_ *discordgo.Session, m *discordgo.MessageCreat
 		return deleteAction
 	}
 
-	// return DeleteFerda success message
+	// return DeleteFerda success Message
 	return DeletedFerda.RenderDiscordText(m.Author.ID, foundID).RenderLogText(foundID).Finalize()
 }
 
@@ -135,13 +135,13 @@ func (b *Bot) processSearchFerda(s *discordgo.Session, _ *discordgo.MessageCreat
 		return ferdaAction
 	}
 
-	// And get our FerdaFound message
+	// And get our FerdaFound Message
 	ferdaDetails := MultipleFerdasFound.Finalize()
 	// Loop over every ferda we found
 	for _, ferdaEntry := range ferdaEntries {
 		// Create a ferda action with their details
 		ferdaAction := GetDetailedFerda.RenderDiscordText(ferdaEntry.ID, user.ID, user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006 at 15:04:05 -0700"), ferdaEntry.Reason, ferdaEntry.CreatorID).RenderLogText(err).Finalize()
-		// And combine them into the FerdaFound message
+		// And combine them into the FerdaFound Message
 		ferdaDetails = ferdaDetails.CombineActions(ferdaAction)
 	}
 
@@ -149,7 +149,7 @@ func (b *Bot) processSearchFerda(s *discordgo.Session, _ *discordgo.MessageCreat
 	return ferdaDetails
 }
 
-// processHelp returns a help message from the treeRouter
+// processHelp returns a help Message from the treeRouter
 func (b *Bot) processHelp(_ *discordgo.Session, _ *discordgo.MessageCreate, _ string) FerdaAction {
 	// Create a HelpHeader msg to combine
 	buildMsg := HelpHeader
@@ -161,7 +161,7 @@ func (b *Bot) processHelp(_ *discordgo.Session, _ *discordgo.MessageCreate, _ st
 	newDiscordText := strings.Split(action.DiscordText, "\n")
 	// Sort them alphabetically (starting after the first one)
 	sort.Strings(newDiscordText[1:])
-	// And re-join the message
+	// And re-join the Message
 	action.DiscordText = strings.Join(newDiscordText, "\n")
 	return buildMsg.CombineActions(*action)
 }

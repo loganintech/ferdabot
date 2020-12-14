@@ -47,6 +47,10 @@ func (b *Bot) processSpotifyLink(s *discordgo.Session, m *discordgo.MessageCreat
 		}
 	}
 
+	if len(songIDs) == 0 {
+		return nil
+	}
+
 	currentUser, userErr := b.spotifyConnection.CurrentUser()
 	if userErr != nil {
 		userAction := SpotifyUserNotFound.RenderLogText(userErr).Finalize()

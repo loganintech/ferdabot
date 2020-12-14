@@ -15,3 +15,11 @@ CREATE TABLE config
     key TEXT PRIMARY KEY NOT NULL UNIQUE,
     val TEXT NOT NULL
 );
+
+CREATE TABLE reminder
+(
+    id        SERIAL PRIMARY KEY NOT NULL UNIQUE,
+    creatorid TEXT               NOT NULL,
+    time      TIMESTAMPTZ        NOT NULL,
+    message   TEXT               NOT NULL
+);

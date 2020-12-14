@@ -24,7 +24,7 @@ func (b *Bot) processDice(_ *discordgo.Session, _ *discordgo.MessageCreate, trim
 
 	// Create a dice header
 	diceMsg := DiceHeader
-	// For each dice arg, get a message for it
+	// For each dice arg, get a Message for it
 	for _, arg := range args {
 		newMsg := processDice(arg)
 		if newMsg.Success() {

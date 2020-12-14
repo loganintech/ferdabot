@@ -17,7 +17,11 @@ import (
 	"github.com/zmb3/spotify"
 )
 
-const redirectURI = "http://localhost:8080/callback"
+const (
+	redirectURI       = "http://localhost:8080/callback"
+	spotifyEnabledKey = "spotifyEnabled"
+	spotifyCodeKey    = "spotifyCode"
+)
 
 var (
 	auth  = spotify.NewAuthenticator(redirectURI, spotify.ScopePlaylistModifyPrivate, spotify.ScopePlaylistModifyPublic, spotify.ScopePlaylistReadPrivate, spotify.ScopePlaylistReadCollaborative)
@@ -40,11 +44,11 @@ type ConfigEntry struct {
 
 // FerdaEntry represents the database structure of a ferda entry
 type FerdaEntry struct {
-	ID        int64     `db:"id"`
+	ID        int64     `db:"Id"`
 	UserID    int64     `db:"userid"`
 	Reason    string    `db:"reason"`
 	When      time.Time `db:"time"`
-	CreatorID int64     `db:"creatorid"`
+	CreatorID int64     `db:"CreatorID"`
 }
 
 // Bot contains or discord and database connections
@@ -126,10 +130,11 @@ func (b *Bot) Setup() error {
 		{key: "?ferdasearch", f: b.processSearchFerda, desc: "Search for ferdas for a person containing some text. Ex: `?ferdasearch @Logan ferdabot`"},
 		{key: "!choice", f: b.processChoice, desc: "Choose a random item from a list. Format `!choose Item1|Item2 | Item3| Item 4 | ...`"},
 		{key: "!dice", f: b.processDice, desc: "Roll a dice in the format 1d6."},
-		{key: "!echo", f: b.processEcho, desc: "Echo any message (not in the blacklist)."},
-		{key: "+help", f: b.processHelp, desc: "Sends this help message."},
-		{key: "?help", f: b.processHelp, desc: "Sends this help message."},
-		{key: "!help", f: b.processHelp, desc: "Sends this help message."},
+		{key: "!echo", f: b.processEcho, desc: "Echo any Message (not in the blacklist)."},
+		{key: "+help", f: b.processHelp, desc: "Sends this help Message."},
+		{key: "?help", f: b.processHelp, desc: "Sends this help Message."},
+		{key: "!help", f: b.processHelp, desc: "Sends this help Message."},
+		{key: "!remindme", f: b.processNewReminder, desc: "Creates a new reminder at a certain time."},
 	}
 	for i, route := range routes {
 		if action := b.treeRouter.AddCommand(route.key, &routes[i]); !action.Success() {
@@ -137,6 +142,10 @@ func (b *Bot) Setup() error {
 		}
 	}
 	// endregion
+
+	//region Reminders
+	go b.reminderLoop()
+	//endregion
 
 	return nil
 }
@@ -167,15 +176,15 @@ func (b *Bot) ProcessFerdaAction(act FerdaAction, s *discordgo.Session, m *disco
 		return
 	}
 
-	// If we want to send to discord and have a session / message
+	// If we want to send to discord and have a session / Message
 	if !act.LogOnly && (s != nil || m != nil) {
 		// Send to discord
 		if _, err := s.ChannelMessageSend(m.ChannelID, act.DiscordText); err != nil {
-			fmt.Printf("Error sending message: %s to %s\n", act.DiscordText, m.ChannelID)
+			fmt.Printf("Error sending Message: %s to %s\n", act.DiscordText, m.ChannelID)
 		}
 	}
 
-	// If the message was not a success
+	// If the Message was not a success
 	if !act.Success() {
 		// Marshal the action to string and print
 		fTreeActBytes, _ := json.Marshal(act)
@@ -185,18 +194,18 @@ func (b *Bot) ProcessFerdaAction(act FerdaAction, s *discordgo.Session, m *disco
 }
 
 func (b *Bot) initializeSpotify() {
-	spotifyEnabledStr, dbAction := b.getConfigEntry("spotifyEnabled")
+	spotifyEnabledStr, dbAction := b.getConfigEntry(spotifyEnabledKey)
 	if !dbAction.Success() {
 		b.ProcessFerdaAction(dbAction, nil, nil)
 	}
 	if dbAction.DBNotFound() {
-		b.insertConfigEntry("spotifyEnabled", strconv.FormatBool(true))
+		b.insertConfigEntry(spotifyEnabledKey, strconv.FormatBool(true))
 	}
 	spotifyEnabled, configErr := strconv.ParseBool(spotifyEnabledStr.Val)
 	spotifyEnabled = spotifyEnabled && configErr == nil
 
 	if spotifyEnabled {
-		spotifyOAuthCode, codeAction := b.getConfigEntry("spotifyCode")
+		spotifyOAuthCode, codeAction := b.getConfigEntry(spotifyCodeKey)
 		if codeAction.Success() {
 			spotifyToken, tokenErr := auth.Exchange(spotifyOAuthCode.Val)
 			if tokenErr == nil {
@@ -222,7 +231,7 @@ func (b *Bot) performFirstTimeSpotifyAuth(w http.ResponseWriter, r *http.Request
 		log.Fatal(err)
 	}
 	if code := r.FormValue("code"); code != "" {
-		insertAct := b.insertConfigEntry("spotifyCode", code)
+		insertAct := b.insertConfigEntry(spotifyCodeKey, code)
 		b.ProcessFerdaAction(insertAct, nil, nil)
 	}
 	// use the token to get an authenticated client

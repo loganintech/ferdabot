@@ -115,7 +115,7 @@ func (n CommandNode) GetHelpActions() *FerdaAction {
 	for _, node := range n.nodes {
 		// If we found a command at this level
 		if node.command != nil {
-			// Render it into our ferda help message
+			// Render it into our ferda help Message
 			nextAction := HelpBody.RenderDiscordText(node.command.key, node.command.desc).Finalize()
 			// If the current help is nil
 			if theseFerdaActions == nil {

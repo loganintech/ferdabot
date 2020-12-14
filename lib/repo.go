@@ -31,13 +31,13 @@ func (b *Bot) getFerdaEntry(foundUser, userID, userName string) (FerdaEntry, Fer
 func (b *Bot) insertFerdaEntry(foundString, reason, creatorID string) FerdaAction {
 	// Named Execution insert to the ferda table
 	res, dbErr := b.db.NamedExec(
-		`INSERT INTO ferda (userid, time, reason, creatorid) VALUES (:userid, :time, :reason, :creatorid)`,
+		`INSERT INTO ferda (userid, time, reason, CreatorID) VALUES (:userid, :time, :reason, :CreatorID)`,
 		map[string]interface{}{
 			"userid": foundString,
 			// Adjust for local time of bot
 			"time":      time.Now().Round(time.Microsecond).Add(-(time.Hour * 7)),
 			"reason":    reason,
-			"creatorid": creatorID,
+			"CreatorID": creatorID,
 		},
 	)
 	// If dbErr isn't nil, return the DBInsertErr log
@@ -87,9 +87,9 @@ func (b *Bot) ferdaSearch(foundUser, userID, userName, searchText string) ([]Fer
 
 // deleteFerda removes a ferda from the database
 func (b *Bot) deleteFerda(foundID string) FerdaAction {
-	// Find a ferda where the id is supplied
+	// Find a ferda where the Id is supplied
 	res, dbErr := b.db.NamedExec(
-		`DELETE FROM ferda WHERE id = :ferdaid`,
+		`DELETE FROM ferda WHERE Id = :ferdaid`,
 		map[string]interface{}{
 			"ferdaid": foundID,
 		},
