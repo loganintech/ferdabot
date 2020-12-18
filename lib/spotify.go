@@ -26,6 +26,10 @@ func (b *Bot) processSpotifyLink(s *discordgo.Session, m *discordgo.MessageCreat
 		return &FromChannelNotFound
 	}
 
+	if fromChannel.Name == "" {
+		fromChannel.Name = m.Author.Username
+	}
+
 	isOk := false
 	for _, okPlaylist := range whitelistedMusicPlaylists {
 		if okPlaylist == channelNameToPlaylistName(fromChannel.Name) {
@@ -91,6 +95,9 @@ func (b *Bot) processSpotifyLink(s *discordgo.Session, m *discordgo.MessageCreat
 }
 
 func channelNameToPlaylistName(channelName string) string {
+	if channelName == "" {
+		return ""
+	}
 	parts := strings.Split(channelName, "-")
 	for i := 0; i < len(parts); i++ {
 		parts[i] = strings.ToUpper(string(parts[i][0])) + parts[i][1:]
