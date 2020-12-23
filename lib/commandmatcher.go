@@ -117,45 +117,26 @@ func (n CommandNode) GetHelpActions() *FerdaAction {
 		if node.command != nil {
 			// Render it into our ferda help Message
 			nextAction := HelpBody.RenderDiscordText(node.command.key, node.command.desc).Finalize()
-			// If the current help is nil
-			if theseFerdaActions == nil {
-				// Assign the new help
-				theseFerdaActions = &nextAction
-			} else {
-				// If it's not nil, append the new one
-				combined := theseFerdaActions.CombineActions(nextAction)
-				theseFerdaActions = &combined
-			}
+			foundAction(theseFerdaActions, &nextAction)
+		}
 
-			// And check if it has even more descendents. Without this, we'd find `?ferda` but not `?ferdasearch`
-			anotherAction := node.GetHelpActions()
-			if anotherAction != nil {
-				// If the current help is nil
-				if theseFerdaActions == nil {
-					// Assign the recursed results
-					theseFerdaActions = anotherAction
-				} else {
-					// If the current help isn't nil, append the new one
-					combined := theseFerdaActions.CombineActions(*anotherAction)
-					theseFerdaActions = &combined
-				}
-			}
-		} else {
-			// If we're at a passthrough node
-			nextAction := node.GetHelpActions()
-			if nextAction != nil {
-				// And the current ferda is empty, assign the new one
-				if theseFerdaActions == nil {
-					theseFerdaActions = nextAction
-				} else {
-					// If the current ferda isn't empty, combine them
-					combined := theseFerdaActions.CombineActions(*nextAction)
-					theseFerdaActions = &combined
-				}
-			}
+		anotherAction := node.GetHelpActions()
+		if anotherAction != nil {
+			foundAction(theseFerdaActions, anotherAction)
 		}
 	}
 
 	// Return the ferdas found
 	return theseFerdaActions
+}
+
+func foundAction(current *FerdaAction, next *FerdaAction) {
+	// If the ferda is nil, set it
+	if current == nil {
+		current = next
+	} else {
+		// If the current ferda isn't empty, combine them
+		combined := current.CombineActions(*next)
+		current = &combined
+	}
 }
