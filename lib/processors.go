@@ -84,8 +84,8 @@ func (b *Bot) processDetailedGetFerda(s *discordgo.Session, _ *discordgo.Message
 	return GetDetailedFerda.RenderDiscordText(ferdaEntry.ID, user.ID, user.ID, ferdaEntry.When.Format("Mon, Jan _2 2006 at 15:04:05 -0700"), ferdaEntry.Reason, ferdaEntry.CreatorID).RenderLogText(err).Finalize()
 }
 
-// processRemoveFerda processes a remove ferda Message
-func (b *Bot) processRemoveFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+// processDeleteFerda processes a remove ferda Message
+func (b *Bot) processDeleteFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	// Split into args
 	split := strings.Split(trimmedText, " ")
 	// And complain if we're missing an arg
@@ -105,7 +105,7 @@ func (b *Bot) processRemoveFerda(_ *discordgo.Session, m *discordgo.MessageCreat
 	}
 
 	// return DeleteFerda success Message
-	return DeletedFerda.RenderDiscordText(m.Author.ID, foundID).RenderLogText(foundID).Finalize()
+	return DeletedItem.RenderDiscordText("ferda", m.Author.ID, foundID).RenderLogText(foundID).Finalize()
 }
 
 // processSearchFerda searches for a ferda given some text

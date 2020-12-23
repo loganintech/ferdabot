@@ -13,7 +13,7 @@ import (
 var timeRegex = regexp.MustCompile("([0-9]+[YMdhms])")
 
 type Reminder struct {
-	Id        int64     `db:"id"`
+	ID        int64     `db:"id"`
 	CreatorID string    `db:"creatorid"`
 	Timestamp time.Time `db:"time"`
 	Message   string    `db:"message"`
@@ -45,7 +45,7 @@ func (b *Bot) processDeleteReminder(_ *discordgo.Session, m *discordgo.MessageCr
 	}
 
 	// return DeleteFerda success Message
-	return DeletedFerda.RenderDiscordText(m.Author.ID, foundID).RenderLogText(foundID).Finalize()
+	return DeletedItem.RenderDiscordText("reminder", m.Author.ID, foundID).RenderLogText(foundID).Finalize()
 }
 
 func (b *Bot) processGetReminders(_ *discordgo.Session, m *discordgo.MessageCreate, _ string) FerdaAction {
@@ -54,9 +54,13 @@ func (b *Bot) processGetReminders(_ *discordgo.Session, m *discordgo.MessageCrea
 		return act
 	}
 
-	reminderHeader := ReminderHeader
+	reminderMsg := ReminderHeader
 	for _, reminder := range reminders {
-		reminderHeader = reminderHeader.CombineActions(ReminderBody.RenderDiscordText(reminder.Id, reminder.Message, reminder.Timestamp.Format("Mon, January 02, 2006 at 03:04:05 PM")).Finalize())
+		reminderMsg = reminderMsg.CombineActions(ReminderBody.RenderDiscordText(reminder.ID, reminder.Message, reminder.Timestamp.Format("Mon, January 02, 2006 at 03:04:05 PM")).Finalize())
+	}
+
+	if len(reminders) == 0 {
+		reminderMsg = NoRemindersFound.RenderLogText(m.Author.ID).Finalize()
 	}
 
 	userChan, err := b.dg.UserChannelCreate(m.Author.ID)
@@ -65,7 +69,7 @@ func (b *Bot) processGetReminders(_ *discordgo.Session, m *discordgo.MessageCrea
 		return DontLog
 	}
 
-	_, msgErr := b.dg.ChannelMessageSend(userChan.ID, reminderHeader.DiscordText)
+	_, msgErr := b.dg.ChannelMessageSend(userChan.ID, reminderMsg.DiscordText)
 	if msgErr != nil {
 		b.ProcessFerdaAction(CantSendUserMessage.RenderLogText(m.Author.ID, msgErr).Finalize(), nil, nil)
 	}
@@ -243,7 +247,7 @@ func (b *Bot) deleteOverdueReminders(ids []int64) FerdaAction {
 // getReminders loads a list of reminders based on the user
 func (b *Bot) getReminders(userid string) ([]Reminder, FerdaAction) {
 	var reminders []Reminder
-	dbErr := b.db.Get(&reminders, `SELECT * FROM reminder WHERE creatorid = $1`, userid)
+	dbErr := b.db.Select(&reminders, `SELECT * FROM reminder WHERE creatorid = $1`, userid)
 	// If the dbErr isn't nil
 	if dbErr != nil {
 		// And the error was a not found error
@@ -321,7 +325,7 @@ func (b *Bot) reminderLoop() FerdaAction {
 				b.ProcessFerdaAction(CantSendUserMessage.RenderLogText(reminder.CreatorID, msgErr).Finalize(), nil, nil)
 				continue
 			}
-			itemsToDelete = append(itemsToDelete, reminder.Id)
+			itemsToDelete = append(itemsToDelete, reminder.ID)
 		}
 
 		if act := b.deleteOverdueReminders(itemsToDelete); !act.Success() {

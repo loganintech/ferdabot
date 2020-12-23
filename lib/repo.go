@@ -87,9 +87,9 @@ func (b *Bot) ferdaSearch(foundUser, userID, userName, searchText string) ([]Fer
 
 // deleteFerda removes a ferda from the database
 func (b *Bot) deleteFerda(foundID string) FerdaAction {
-	// Find a ferda where the Id is supplied
+	// Find a ferda where the ID is supplied
 	res, dbErr := b.db.NamedExec(
-		`DELETE FROM ferda WHERE Id = :ferdaid`,
+		`DELETE FROM ferda WHERE id = :ferdaid`,
 		map[string]interface{}{
 			"ferdaid": foundID,
 		},

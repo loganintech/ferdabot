@@ -44,7 +44,7 @@ type ConfigEntry struct {
 
 // FerdaEntry represents the database structure of a ferda entry
 type FerdaEntry struct {
-	ID        int64     `db:"Id"`
+	ID        int64     `db:"ID"`
 	UserID    int64     `db:"userid"`
 	Reason    string    `db:"reason"`
 	When      time.Time `db:"time"`
@@ -125,7 +125,7 @@ func (b *Bot) Setup() error {
 	routes := []MessageCreateRoute{
 		{key: "+ferda", f: b.processNewFerda, desc: "Add a new ferda with a reason. Ex: `+ferda @Logan for creating ferdabot.`"},
 		{key: "?ferda", f: b.processGetFerda, desc: "Get a ferda for a person. Ex: `?ferda @Logan`"},
-		{key: "-ferda", f: b.processRemoveFerda, desc: "Remove a ferda by its ID: `-ferda 7`"},
+		{key: "-ferda", f: b.processDeleteFerda, desc: "Remove a ferda by its ID: `-ferda 7`"},
 		{key: "?bigferda", f: b.processDetailedGetFerda, desc: "Get a detailed ferda for a person. Ex: `?bigferda @Logan`"},
 		{key: "?ferdasearch", f: b.processSearchFerda, desc: "Search for ferdas for a person containing some text. Ex: `?ferdasearch @Logan ferdabot`"},
 		{key: "!choice", f: b.processChoice, desc: "Choose a random item from a list. Format `!choose Item1|Item2 | Item3| Item 4 | ...`"},
