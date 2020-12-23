@@ -134,7 +134,9 @@ func (b *Bot) Setup() error {
 		{key: "+help", f: b.processHelp, desc: "Sends this help Message."},
 		{key: "?help", f: b.processHelp, desc: "Sends this help Message."},
 		{key: "!help", f: b.processHelp, desc: "Sends this help Message."},
-		{key: "!remindme", f: b.processNewReminder, desc: "Creates a new reminder at a certain time."},
+		{key: "+remindme", f: b.processNewReminder, desc: "Creates a new reminder at a certain time."},
+		{key: "?remindme", f: b.processGetReminders, desc: "DMs you a list of your reminders."},
+		{key: "-remindme", f: b.processDeleteReminder, desc: "Deletes a reminder by ID."},
 	}
 	for i, route := range routes {
 		if action := b.treeRouter.AddCommand(route.key, &routes[i]); !action.Success() {

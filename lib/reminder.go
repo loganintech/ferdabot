@@ -19,6 +19,59 @@ type Reminder struct {
 	Message   string    `db:"message"`
 }
 
+func (b *Bot) processDeleteReminder(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+	// Split into args
+	split := strings.Split(trimmedText, " ")
+	// And complain if we're missing an arg
+	if len(split) < 1 {
+		return MissingID.Finalize()
+	}
+	foundID := split[0]
+
+	if _, err := strconv.Atoi(foundID); err != nil {
+		return BadIDFormat.RenderLogText(foundID).RenderLogText(foundID).Finalize()
+	}
+
+	if reminder, action := b.getReminder(foundID); !action.Success() {
+		return action
+	} else if reminder.CreatorID != m.Author.ID {
+		return CantDeleteOthersReminder.RenderLogText(m.Author.ID, reminder, reminder.CreatorID).Finalize()
+	}
+
+	// Delete the ferda
+	deleteAction := b.deleteReminder(foundID)
+	if !deleteAction.Success() {
+		return deleteAction
+	}
+
+	// return DeleteFerda success Message
+	return DeletedFerda.RenderDiscordText(m.Author.ID, foundID).RenderLogText(foundID).Finalize()
+}
+
+func (b *Bot) processGetReminders(_ *discordgo.Session, m *discordgo.MessageCreate, _ string) FerdaAction {
+	reminders, act := b.getReminders(m.Author.ID)
+	if !act.Success() {
+		return act
+	}
+
+	reminderHeader := ReminderHeader
+	for _, reminder := range reminders {
+		reminderHeader = reminderHeader.CombineActions(ReminderBody.RenderDiscordText(reminder.Id, reminder.Message, reminder.Timestamp.Format("Mon, January 02, 2006 at 03:04:05 PM")).Finalize())
+	}
+
+	userChan, err := b.dg.UserChannelCreate(m.Author.ID)
+	if err != nil {
+		b.ProcessFerdaAction(CantCreateUserChannel.RenderLogText(m.Author.ID, err).Finalize(), nil, nil)
+		return DontLog
+	}
+
+	_, msgErr := b.dg.ChannelMessageSend(userChan.ID, reminderHeader.DiscordText)
+	if msgErr != nil {
+		b.ProcessFerdaAction(CantSendUserMessage.RenderLogText(m.Author.ID, msgErr).Finalize(), nil, nil)
+	}
+	return DontLog
+}
+
 // processDice processes the dice roll command
 func (b *Bot) processNewReminder(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
 	args := strings.Split(trimmedText, " ")
@@ -185,6 +238,66 @@ func (b *Bot) deleteOverdueReminders(ids []int64) FerdaAction {
 	}
 
 	return DBSuccess.Finalize()
+}
+
+// getReminders loads a list of reminders based on the user
+func (b *Bot) getReminders(userid string) ([]Reminder, FerdaAction) {
+	var reminders []Reminder
+	dbErr := b.db.Get(&reminders, `SELECT * FROM reminder WHERE creatorid = $1`, userid)
+	// If the dbErr isn't nil
+	if dbErr != nil {
+		// And the error was a not found error
+		if dbErr.Error() == "sql: no rows in result set" {
+			// Return that the user isn't ferda
+			return reminders, NoRemindersFound.RenderLogText(userid).Finalize()
+		}
+		// Return the DBGetErr from the dbErr
+		return reminders, DBGetErr.RenderLogText(dbErr).Finalize()
+	}
+
+	// Return the found reminders and DBSuccess FerdaAction
+	return reminders, DBSuccess
+}
+
+// getReminder loads a reminder based on its ID
+func (b *Bot) getReminder(foundID string) (Reminder, FerdaAction) {
+	var reminder Reminder
+	dbErr := b.db.Get(&reminder, `SELECT * FROM reminder WHERE id = $1`, foundID)
+	// If the dbErr isn't nil
+	if dbErr != nil {
+		// And the error was a not found error
+		if dbErr.Error() == "sql: no rows in result set" {
+			// Return that the user isn't ferda
+			return reminder, NoRemindersFoundByID.RenderLogText(foundID).Finalize()
+		}
+		// Return the DBGetErr from the dbErr
+		return reminder, DBGetErr.RenderLogText(dbErr).Finalize()
+	}
+
+	// Return the found reminder and DBSuccess FerdaAction
+	return reminder, DBSuccess
+}
+
+// deleteReminder deletes a reminder
+func (b *Bot) deleteReminder(reminderID string) FerdaAction {
+	// Delete a reminder based on its ID
+	res, dbErr := b.db.NamedExec(
+		`DELETE FROM reminder WHERE id = :reminderid`,
+		map[string]interface{}{
+			"reminderid": reminderID,
+		},
+	)
+	if dbErr != nil {
+		return DBDeleteErr.RenderLogText(dbErr).Finalize()
+	}
+
+	// If no rows are affected, return no rows affected error
+	count, _ := res.RowsAffected()
+	if count == 0 {
+		return NoRowDBErr.Finalize()
+	}
+
+	return DBSuccess
 }
 
 func (b *Bot) reminderLoop() FerdaAction {
