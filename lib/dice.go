@@ -1,6 +1,7 @@
 package ferdabot
 
 import (
+	"fmt"
 	"math/rand"
 	"regexp"
 	"strconv"
@@ -22,11 +23,23 @@ func (b *Bot) processDice(_ *discordgo.Session, _ *discordgo.MessageCreate, trim
 		return NotEnoughArguments.RenderDiscordText(1).Finalize()
 	}
 
+	config, act := b.getConfigEntry("maxdice")
+	if act.DBNotFound() {
+		config.Val = "20"
+	} else if !act.Success() && !act.DBNotFound() {
+		return act
+	}
+
+	limit, limitParse := strconv.Atoi(config.Val)
+	if limitParse != nil {
+		return NumberParseError.RenderLogText(config.Val, limitParse).Finalize()
+	}
+
 	// Create a dice header
 	diceMsg := DiceHeader
 	// For each dice arg, get a Message for it
 	for _, arg := range args {
-		newMsg := processDice(arg)
+		newMsg := processDice(arg, int64(limit))
 		if newMsg.Success() {
 			diceMsg = diceMsg.CombineActions(newMsg)
 		} else {
@@ -38,7 +51,7 @@ func (b *Bot) processDice(_ *discordgo.Session, _ *discordgo.MessageCreate, trim
 }
 
 // processDice returns a FerdaAction based on dice rolls
-func processDice(diceText string) FerdaAction {
+func processDice(diceText string, limit int64) FerdaAction {
 	// Seed the random generator
 	rand.Seed(time.Now().UnixNano())
 	args := strings.Split(diceText, " ")
@@ -71,26 +84,31 @@ func processDice(diceText string) FerdaAction {
 		if len(match) == 4 {
 			// Parse it, add to the string
 			add, _ = strconv.Atoi(match[3])
-			addTxt = "+" + match[3]
+			if add != 0 {
+				addTxt = "+" + match[3]
+			}
 		}
 
-		// Limit them to under 20
-		if count > 20 {
+		// Limit them to the max
+		if int64(count) > limit {
 			return TooManyDiceToRoll
 		}
 
+		var vals []string
 		// For each dice we have to roll
 		for i := 0; i < count; i++ {
 			// Actually roll it
 			val := rand.Int63n(int64(sides)) + 1 + int64(add)
-			// Create a FerdaAction with the results
-			newBody := DiceBody.RenderDiscordText(count, sides, addTxt, val).RenderLogText(count, sides, addTxt, val).Finalize()
-			if diceBody == nil {
-				diceBody = &newBody
-			} else {
-				newBody = diceBody.CombineActions(newBody)
-				diceBody = &newBody
-			}
+			vals = append(vals, fmt.Sprintf("%d", val))
+		}
+		valStr := strings.Join(vals, ",")
+		newBody := DiceBody.RenderDiscordText(count, sides, addTxt, valStr).RenderLogText(count, sides, addTxt, valStr).Finalize()
+		// Create a FerdaAction with the results
+		if diceBody == nil {
+			diceBody = &newBody
+		} else {
+			newBody = diceBody.CombineActions(newBody)
+			diceBody = &newBody
 		}
 	}
 

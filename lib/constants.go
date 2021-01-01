@@ -10,7 +10,7 @@ var (
 	GetDetailedFerda = FerdaSuccess("[%d - %s] <@!%s> was ferda on %s for %s added by <@!%d>.", "Sent a detailed ferda Message %s.")
 	DeletedItem      = FerdaSuccess("Deleted a %s successfully <@!%s>. ID: [%s]", "Deleted a ferda with ID %d.")
 	HelpBody         = FerdaSuccess("> [%s] %s", "")
-	DiceBody         = FerdaSuccess("Rolling [%dd%d%s]: %d", "Rolling [%dd%d%s]: %d")
+	DiceBody         = FerdaSuccess("Rolling [%dd%d%s]: %s", "Rolling [%dd%d%s]: %s")
 	ReminderBody     = FerdaSuccess("[ID: %d] Reminding you to '%s' at %s", "")
 	ChoiceResult     = FerdaSuccess("The choice is: %s", "Chose %s from random array %v")
 	ReminderAdded    = FerdaSuccess("You will be reminded to: %s on %v", "New Reminder Saved")
@@ -29,6 +29,7 @@ var (
 	BadIDFormat              = FerdaFailure("ID was not in the correct format: %s", "ID was not in the correct format: %s")
 	NoRemindersFound         = FerdaFailure("You have no pending reminders.", "No reminders found for user: %s")
 	CantDeleteOthersReminder = FerdaFailure("You cannot delete reminders you didn't make.", "User %s tried to delete reminder %+v from %s.")
+	NumberParseError         = FerdaFailure("Something was expecting a number but didn't get it, please contact Logan.", "Error Occurred parsing %s to int: %v")
 
 	// LogOnly Fail
 	AddRouteFailed             = FerdaLogOnly("Adding route failed, %s already exists").SetFail()
@@ -36,7 +37,7 @@ var (
 	SpotifyCreatePlaylistError = FerdaLogOnly("Spotify Playlist Creation Failed [%v]").SetFail()
 	SpotifyAddToPlaylistError  = FerdaLogOnly("Spotify Tracks failed to Add to Playlist [%v]").SetFail()
 	SpotifyUserNotFound        = FerdaLogOnly("Current Spotify user Not Set [%v]").SetFail()
-	ParamNotFound              = FerdaLogOnly("ConfigEntry was not found: %s").SetFail()
+	ParamNotFound              = FerdaLogOnly("ConfigEntry was not found: %s").SetFail().SetDBNotFound()
 	CantCreateUserChannel      = FerdaLogOnly("Can't Create User Channel: [%s] %v").SetFail()
 	CantSendUserMessage        = FerdaLogOnly("Can't Send User Message: [%s] %v").SetFail()
 	NoRemindersFoundByID       = FerdaLogOnly("No reminders found for ID: %s").SetFail()

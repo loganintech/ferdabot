@@ -75,6 +75,12 @@ func (a FerdaActionBuilder) SetLogOnly(val bool) FerdaActionBuilder {
 	return a
 }
 
+// SetDBNotFound sets whether this is a DB Not Found error
+func (a FerdaActionBuilder) SetDBNotFound() FerdaActionBuilder {
+	a.DBNotFound = true
+	return a
+}
+
 // RenderDiscordText formats the discordTextFormat to discordText
 func (a FerdaActionBuilder) RenderDiscordText(d ...interface{}) FerdaActionBuilder {
 	a.discordText = fmt.Sprintf(a.discordTextFormat, d...)
@@ -97,9 +103,10 @@ func (a FerdaActionBuilder) Finalize() FerdaAction {
 	}
 	return FerdaAction{
 		DiscordText: a.discordText,
-		LogText:     a.logText,
 		DontLog:     a.DontLog,
 		LogOnly:     a.LogOnly,
+		LogText:     a.logText,
+		dbNotFound:  a.DBNotFound,
 		success:     a.Success,
 	}
 }
