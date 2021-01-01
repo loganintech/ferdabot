@@ -44,11 +44,11 @@ type ConfigEntry struct {
 
 // FerdaEntry represents the database structure of a ferda entry
 type FerdaEntry struct {
-	ID        int64     `db:"ID"`
+	ID        int64     `db:"id"`
 	UserID    int64     `db:"userid"`
 	Reason    string    `db:"reason"`
 	When      time.Time `db:"time"`
-	CreatorID int64     `db:"CreatorID"`
+	CreatorID int64     `db:"creatorid"`
 }
 
 // Bot contains or discord and database connections
