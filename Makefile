@@ -11,3 +11,7 @@ down:
 rebuild:
 	docker-compose build
 	docker-compose -f docker-compose.yml up
+
+rebuildsilent:
+	docker-compose build
+	docker-compose -f docker-compose.yml up --detach
