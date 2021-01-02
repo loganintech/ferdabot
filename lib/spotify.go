@@ -47,7 +47,7 @@ func (b *Bot) processSpotifyLink(s *discordgo.Session, m *discordgo.MessageCreat
 		if len(submatch) > 1 {
 			match := submatch[1]
 			songIDs = append(songIDs, spotify.ID(match))
-			b.ProcessFerdaAction(SpotifySongAdded.RenderLogText(match, "playlist").Finalize(), s, m)
+			b.ProcessFerdaAction(SpotifySongAdded.RenderLogText(match, "playlist").Finalize(), s, m.Message)
 		}
 	}
 

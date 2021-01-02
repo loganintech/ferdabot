@@ -41,6 +41,7 @@ var (
 	CantCreateUserChannel      = FerdaLogOnly("Can't Create User Channel: [%s] %v").SetFail()
 	CantSendUserMessage        = FerdaLogOnly("Can't Send User Message: [%s] %v").SetFail()
 	NoRemindersFoundByID       = FerdaLogOnly("No reminders found for ID: %s").SetFail()
+	MessageDeleteFailed        = FerdaLogOnly("Couldn't Delete Message: [%s] %v").SetFail()
 
 	// LogOnly Success
 	SpotifySongAdded = FerdaLogOnly("Song [%s] Added to Playlist: %s").SetSuccess()

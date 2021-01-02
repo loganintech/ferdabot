@@ -85,6 +85,7 @@ func (b *Bot) Setup() error {
 
 	// Add the messageCreate handler to the bot
 	dg.AddHandler(b.messageCreate)
+	dg.AddHandler(b.messageUpdate)
 	// And assign the intents
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsDirectMessages)
 	b.dg = dg
@@ -173,7 +174,7 @@ func (b *Bot) Run() error {
 	return nil
 }
 
-func (b *Bot) ProcessFerdaAction(act FerdaAction, s *discordgo.Session, m *discordgo.MessageCreate) {
+func (b *Bot) ProcessFerdaAction(act FerdaAction, s *discordgo.Session, m *discordgo.Message) {
 	if act.DontLog {
 		return
 	}
