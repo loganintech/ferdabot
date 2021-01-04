@@ -2,3 +2,4 @@ ferda.env
 cert.crt
 /postgres-data/
 /.idea/
+piconn.sh
