@@ -4,6 +4,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -164,4 +165,14 @@ func (b *Bot) processHelp(_ *discordgo.Session, _ *discordgo.MessageCreate, _ st
 	// And re-join the Message
 	action.DiscordText = strings.Join(newDiscordText, "\n")
 	return buildMsg.CombineActions(*action)
+}
+
+func (b *Bot) processPing(_ *discordgo.Session, m *discordgo.MessageCreate, _ string) FerdaAction {
+	then, err := m.Timestamp.Parse()
+	if err != nil {
+		return TimeParseFailed.RenderLogText(m.Timestamp, err).Finalize()
+	}
+	now := time.Now()
+	diff := now.Sub(then).Milliseconds()
+	return Pong.RenderLogText(diff).RenderDiscordText(diff).Finalize()
 }

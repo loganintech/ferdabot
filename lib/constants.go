@@ -14,6 +14,7 @@ var (
 	ReminderBody     = FerdaSuccess("[ID: %d] Reminding you to '%s' at %s", "")
 	ChoiceResult     = FerdaSuccess("The choice is: %s", "Chose %s from random array %v")
 	ReminderAdded    = FerdaSuccess("You will be reminded to: %s on %v", "New Reminder Saved")
+	Pong             = FerdaSuccess("Pong! [%dms]", "Pong! [%dms]")
 
 	// Failure
 	MentionMissing           = FerdaFailure("You must ping an associated user. Ex: `+ferda @Logan is a great guy` or `?ferda @Logan`", "Failed to find a username in Message %s.")
@@ -30,6 +31,7 @@ var (
 	NoRemindersFound         = FerdaFailure("You have no pending reminders.", "No reminders found for user: %s")
 	CantDeleteOthersReminder = FerdaFailure("You cannot delete reminders you didn't make.", "User %s tried to delete reminder %+v from %s.")
 	NumberParseError         = FerdaFailure("Something was expecting a number but didn't get it, please contact Logan.", "Error Occurred parsing %s to int: %v")
+	TimeParseFailed          = FerdaFailure("A bad time has been attempted to parse.", "Time [%s] couldn't parse: [%v]")
 
 	// LogOnly Fail
 	AddRouteFailed             = FerdaLogOnly("Adding route failed, %s already exists").SetFail()
