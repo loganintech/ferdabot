@@ -34,7 +34,7 @@ func (b *Bot) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 func (b *Bot) messageUpdate(s *discordgo.Session, m *discordgo.MessageUpdate) {
 	m.Content = strings.TrimSpace(m.Content)
 	// Ignore the Message if the bot sent it
-	if m.Author.ID == s.State.User.ID {
+	if m.Author != nil && m.Author.ID == s.State.User.ID {
 		return
 	}
 
