@@ -6,9 +6,15 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+const aquariumChannelID = "925287976240578570"
+
 // messageCreate handles discordgo.MessageCreate events
 func (b *Bot) messageCreate(s *discordgo.Session, m *discordgo.MessageCreate) {
 	//TODO: Gabe to add code to check if the channel is #aquarium and put a new fish in the aquarium
+
+	if m.ChannelID != aquariumChannelID {
+
+	}
 
 }
 
