@@ -15,13 +15,13 @@ services:
     cap_add:
       - SYS_PTRACE
     ports:
-      - 8080:8080
+      - 8081:8080
       - 40000:40000
   db:
     image: postgres:12
     restart: always
     env_file: ferda.env
     ports:
-      - 5432:5432
+      - 5433:5432
     volumes:
       - ./postgres-data:/var/lib/postgresql/data

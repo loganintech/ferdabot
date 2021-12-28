@@ -7,15 +7,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/bwmarrin/discordgo"
 )
 
 // diceRegex matches the 1d6 format for dice rolling
 var diceRegex = regexp.MustCompile("([0-9]*)[dD]([0-9]*)[+]?([0-9]+)?")
 
 // processDice processes the dice roll command
-func (b *Bot) processDice(_ *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processDice(trimmedText string) FerdaAction {
 	// Split the args
 	args := strings.Split(trimmedText, " ")
 	// Validate the arguments

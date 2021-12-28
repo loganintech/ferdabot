@@ -34,20 +34,16 @@ var (
 	TimeParseFailed          = FerdaFailure("A bad time has been attempted to parse.", "Time [%s] couldn't parse: [%v]")
 
 	// LogOnly Fail
-	AddRouteFailed             = FerdaLogOnly("Adding route failed, %s already exists").SetFail()
-	RouteNotFound              = FerdaLogOnly("Route %s was not found").SetFail()
-	SpotifyCreatePlaylistError = FerdaLogOnly("Spotify Playlist Creation Failed [%v]").SetFail()
-	SpotifyAddToPlaylistError  = FerdaLogOnly("Spotify Tracks failed to Add to Playlist [%v]").SetFail()
-	SpotifyUserNotFound        = FerdaLogOnly("Current Spotify user Not Set [%v]").SetFail()
-	ParamNotFound              = FerdaLogOnly("ConfigEntry was not found: %s").SetFail().SetDBNotFound()
-	CantCreateUserChannel      = FerdaLogOnly("Can't Create User Channel: [%s] %v").SetFail()
-	CantSendUserMessage        = FerdaLogOnly("Can't Send User Message: [%s] %v").SetFail()
-	NoRemindersFoundByID       = FerdaLogOnly("No reminders found for ID: %s").SetFail()
-	MessageDeleteFailed        = FerdaLogOnly("Couldn't Delete Message: [%s] %v").SetFail()
+	AddRouteFailed        = FerdaLogOnly("Adding route failed, %s already exists").SetFail()
+	RouteNotFound         = FerdaLogOnly("Route %s was not found").SetFail()
+	ParamNotFound         = FerdaLogOnly("ConfigEntry was not found: %s").SetFail().SetDBNotFound()
+	CantCreateUserChannel = FerdaLogOnly("Can't Create User Channel: [%s] %v").SetFail()
+	CantSendUserMessage   = FerdaLogOnly("Can't Send User Message: [%s] %v").SetFail()
+	NoRemindersFoundByID  = FerdaLogOnly("No reminders found for ID: %s").SetFail()
+	MessageDeleteFailed   = FerdaLogOnly("Couldn't Delete Message: [%s] %v").SetFail()
 
 	// LogOnly Success
-	SpotifySongAdded = FerdaLogOnly("Song [%s] Added to Playlist: %s").SetSuccess()
-	AddRouteSuccess  = FerdaLogOnly("Adding route complete: %s").SetSuccess()
+	AddRouteSuccess = FerdaLogOnly("Adding route complete: %s").SetSuccess()
 
 	// Pre-Finalized Success
 	HelpHeader          = FerdaSuccess("Here's the list of available commands:", "Help Message sent.").Finalize()
@@ -55,14 +51,14 @@ var (
 	MultipleFerdasFound = FerdaSuccess("Found the following ferdas:", "Found multiple ferdas:").Finalize()
 	DiceHeader          = FerdaSuccess("Rolling dice:", "Rolling Dice:").Finalize()
 	ReminderHeader      = FerdaSuccess("Here's your reminders:", "Reminder Message Sent").Finalize()
+	OnlyPong            = FerdaSuccess("Pong!", "Pong!").Finalize()
 	//RoutesFinished      = FerdaLogOnly("Routes finished setup without error.").SetSuccess().Finalize()
 
 	// Pre-Finalized Failure
-	NoRowDBErr              = FerdaFailure("Database error occurred, please contact Logan.", "No rows affected in DB.").Finalize()
-	DBResultsEmpty          = FerdaFailure("No entries found.", "No rows returned in result set.")
-	TooManyDiceToRoll       = FerdaFailure("You can't roll that many dice.", "User wanted to roll too many dice.").SetFail().Finalize()
-	SpotifyPlaylistNotFound = FerdaLogOnly("Spotify Playlist not Found").SetFail().Finalize()
-	FromChannelNotFound     = FerdaLogOnly("From Channel not Found").SetFail().Finalize()
+	NoRowDBErr          = FerdaFailure("Database error occurred, please contact Logan.", "No rows affected in DB.").Finalize()
+	DBResultsEmpty      = FerdaFailure("No entries found.", "No rows returned in result set.")
+	TooManyDiceToRoll   = FerdaFailure("You can't roll that many dice.", "User wanted to roll too many dice.").SetFail().Finalize()
+	FromChannelNotFound = FerdaLogOnly("From Channel not Found").SetFail().Finalize()
 
 	DontLog = FerdaActionBuilder{DontLog: true}.Finalize()
 )

@@ -2,11 +2,12 @@ package ferdabot
 
 import (
 	"fmt"
-	"github.com/bwmarrin/discordgo"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/bwmarrin/discordgo"
 )
 
 var timeRegex = regexp.MustCompile("([0-9]+[YMdhms])")
@@ -62,13 +63,13 @@ func (b *Bot) processGetReminders(_ *discordgo.Session, m *discordgo.MessageCrea
 		reminderMsg = NoRemindersFound.RenderLogText(m.Author.ID).Finalize()
 	}
 
-	userChan, err := b.dg.UserChannelCreate(m.Author.ID)
+	userChan, err := b.discord.UserChannelCreate(m.Author.ID)
 	if err != nil {
 		b.ProcessFerdaAction(CantCreateUserChannel.RenderLogText(m.Author.ID, err).Finalize(), nil, nil)
 		return DontLog
 	}
 
-	_, msgErr := b.dg.ChannelMessageSend(userChan.ID, reminderMsg.DiscordText)
+	_, msgErr := b.discord.ChannelMessageSend(userChan.ID, reminderMsg.DiscordText)
 	if msgErr != nil {
 		b.ProcessFerdaAction(CantSendUserMessage.RenderLogText(m.Author.ID, msgErr).Finalize(), nil, nil)
 	}
@@ -184,13 +185,13 @@ func (b *Bot) reminderLoop() FerdaAction {
 
 		var itemsToDelete []int64
 		for _, reminder := range reminders {
-			userChan, err := b.dg.UserChannelCreate(reminder.CreatorID)
+			userChan, err := b.discord.UserChannelCreate(reminder.CreatorID)
 			if err != nil {
 				b.ProcessFerdaAction(CantCreateUserChannel.RenderLogText(reminder.CreatorID, err).Finalize(), nil, nil)
 				continue
 			}
 
-			_, msgErr := b.dg.ChannelMessageSend(userChan.ID, reminder.Message)
+			_, msgErr := b.discord.ChannelMessageSend(userChan.ID, reminder.Message)
 			if msgErr != nil {
 				b.ProcessFerdaAction(CantSendUserMessage.RenderLogText(reminder.CreatorID, msgErr).Finalize(), nil, nil)
 				continue

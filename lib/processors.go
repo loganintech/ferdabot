@@ -1,7 +1,6 @@
 package ferdabot
 
 import (
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -150,24 +149,11 @@ func (b *Bot) processSearchFerda(s *discordgo.Session, _ *discordgo.MessageCreat
 	return ferdaDetails
 }
 
-// processHelp returns a help Message from the treeRouter
-func (b *Bot) processHelp(_ *discordgo.Session, _ *discordgo.MessageCreate, _ string) FerdaAction {
-	// Create a HelpHeader msg to combine
-	buildMsg := HelpHeader
-	action := b.treeRouter.GetHelpActions()
-	if action == nil {
-		return RouteNotFound.Finalize()
+func (b *Bot) processPing(m *discordgo.Message) FerdaAction {
+	if m == nil {
+		return OnlyPong
 	}
-	// Get all of the results, split them into lines
-	newDiscordText := strings.Split(action.DiscordText, "\n")
-	// Sort them alphabetically (starting after the first one)
-	sort.Strings(newDiscordText[1:])
-	// And re-join the Message
-	action.DiscordText = strings.Join(newDiscordText, "\n")
-	return buildMsg.CombineActions(*action)
-}
 
-func (b *Bot) processPing(_ *discordgo.Session, m *discordgo.MessageCreate, _ string) FerdaAction {
 	then, err := m.Timestamp.Parse()
 	if err != nil {
 		return TimeParseFailed.RenderLogText(m.Timestamp, err).Finalize()
