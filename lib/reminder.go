@@ -6,8 +6,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/bwmarrin/discordgo"
 )
 
 var timeRegex = regexp.MustCompile("([0-9]+[YMdhms])")
@@ -19,7 +17,7 @@ type Reminder struct {
 	Message   string    `db:"message"`
 }
 
-func (b *Bot) processDeleteReminder(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processDeleteReminder(authorID string, trimmedText string) FerdaAction {
 	// Split into args
 	split := strings.Split(trimmedText, " ")
 	// And complain if we're missing an arg
@@ -34,8 +32,8 @@ func (b *Bot) processDeleteReminder(_ *discordgo.Session, m *discordgo.MessageCr
 
 	if reminder, action := b.getReminder(foundID); !action.Success() {
 		return action
-	} else if reminder.CreatorID != m.Author.ID {
-		return CantDeleteOthersReminder.RenderLogText(m.Author.ID, reminder, reminder.CreatorID).Finalize()
+	} else if reminder.CreatorID != authorID {
+		return CantDeleteOthersReminder.RenderLogText(authorID, reminder, reminder.CreatorID).Finalize()
 	}
 
 	// Delete the ferda
@@ -45,11 +43,11 @@ func (b *Bot) processDeleteReminder(_ *discordgo.Session, m *discordgo.MessageCr
 	}
 
 	// return DeleteFerda success Message
-	return DeletedItem.RenderDiscordText("reminder", m.Author.ID, foundID).RenderLogText(foundID).Finalize()
+	return DeletedItem.RenderDiscordText("reminder", authorID, foundID).RenderLogText(foundID).Finalize()
 }
 
-func (b *Bot) processGetReminders(_ *discordgo.Session, m *discordgo.MessageCreate, _ string) FerdaAction {
-	reminders, act := b.getReminders(m.Author.ID)
+func (b *Bot) processListReminders(authorID string) FerdaAction {
+	reminders, act := b.getReminders(authorID)
 	if !act.Success() {
 		return act
 	}
@@ -60,24 +58,22 @@ func (b *Bot) processGetReminders(_ *discordgo.Session, m *discordgo.MessageCrea
 	}
 
 	if len(reminders) == 0 {
-		reminderMsg = NoRemindersFound.RenderLogText(m.Author.ID).Finalize()
+		reminderMsg = NoRemindersFound.RenderLogText(authorID).Finalize()
 	}
 
-	userChan, err := b.discord.UserChannelCreate(m.Author.ID)
+	userChan, err := b.discord.UserChannelCreate(authorID)
 	if err != nil {
-		b.ProcessFerdaAction(CantCreateUserChannel.RenderLogText(m.Author.ID, err).Finalize(), nil, nil)
-		return DontLog
+		return CantCreateUserChannel.RenderLogText(authorID, err).Finalize()
 	}
 
 	_, msgErr := b.discord.ChannelMessageSend(userChan.ID, reminderMsg.DiscordText)
 	if msgErr != nil {
-		b.ProcessFerdaAction(CantSendUserMessage.RenderLogText(m.Author.ID, msgErr).Finalize(), nil, nil)
+		return CantSendUserMessage.RenderLogText(authorID, msgErr).Finalize()
 	}
-	return DontLog
+	return CheckYourDMs
 }
 
-// processDice processes the dice roll command
-func (b *Bot) processNewReminder(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processNewReminder(authorID string, trimmedText string) FerdaAction {
 	args := strings.Split(trimmedText, " ")
 
 	if len(args) < 2 {
@@ -122,7 +118,7 @@ func (b *Bot) processNewReminder(_ *discordgo.Session, m *discordgo.MessageCreat
 		}
 	}
 
-	if action := b.newReminder(then, m.Author.ID, message); !action.Success() {
+	if action := b.newReminder(then, authorID, message); !action.Success() {
 		return action
 	}
 

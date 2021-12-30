@@ -3,6 +3,7 @@ package ferdabot
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/bwmarrin/discordgo"
 )
@@ -39,14 +40,16 @@ func (b *Bot) setupDiscord() (func(), error) {
 			action := handler(s, i)
 			respondWith = action.DiscordText
 
-			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
-				Type: discordgo.InteractionResponseChannelMessageWithSource,
-				Data: &discordgo.InteractionResponseData{
-					Content: respondWith,
-				},
-			})
-			if err != nil {
-				_, _ = fmt.Fprintln(os.Stderr, "error responding to discord command, %w", err)
+			if !action.ResponseHandled {
+				err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+					Type: discordgo.InteractionResponseChannelMessageWithSource,
+					Data: &discordgo.InteractionResponseData{
+						Content: respondWith,
+					},
+				})
+				if err != nil {
+					_, _ = fmt.Fprintln(os.Stderr, "error responding to discord command, %w", err)
+				}
 			}
 
 			if !action.DontLog {
@@ -66,10 +69,10 @@ func (b *Bot) setupDiscord() (func(), error) {
 
 	if _, err := b.discord.ApplicationCommandBulkOverwrite(b.discord.State.Ready.User.ID, os.Getenv("DISCORD_GUILD_ID"), []*discordgo.ApplicationCommand{
 		diceCommand,
-		//choiceCommand,
+		choiceCommand,
 		pingCommand,
 		//ferdaCommand,
-		//remindCommand,
+		remindCommand,
 	}); err != nil {
 		return nil, err
 	}
@@ -109,10 +112,23 @@ var diceCommand = &discordgo.ApplicationCommand{
 }
 
 func (b *Bot) handleChoiceCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
-	return DontLog
+	return b.processChoice(i.ApplicationCommandData().Options[0].Value.(string))
 }
 
-var choiceCommand = &discordgo.ApplicationCommand{}
+var choiceCommand = &discordgo.ApplicationCommand{
+	Name:        "choice",
+	Description: "Make a random selection between some choices.",
+	Version:     "0.0.1",
+	Type:        discordgo.ChatApplicationCommand,
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Type:        discordgo.ApplicationCommandOptionString,
+			Name:        "choices",
+			Description: "List of choices sepparated by `|`",
+			Required:    true,
+		},
+	},
+}
 
 func (b *Bot) handlePingCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
 	return b.processPing(i.Message)
@@ -126,6 +142,7 @@ var pingCommand = &discordgo.ApplicationCommand{
 }
 
 func (b *Bot) handleFerdaCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
+
 	//	{key: "+ferda", f: b.processNewFerda, desc: "Add a new ferda with a reason. Ex: `+ferda @Logan for creating ferdabot.`"},
 	//	{key: "?ferda", f: b.processGetFerda, desc: "Get a ferda for a person. Ex: `?ferda @Logan`"},
 	//	{key: "-ferda", f: b.processDeleteFerda, desc: "Remove a ferda by its ID: `-ferda 7`"},
@@ -136,12 +153,84 @@ func (b *Bot) handleFerdaCommand(_ *discordgo.Session, i *discordgo.InteractionC
 
 var ferdaCommand = &discordgo.ApplicationCommand{}
 
-func (b *Bot) handleRemindCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
-	//	{key: "+remindme", f: b.processNewReminder, desc: "Creates a new reminder at a certain time."},
-	//	{key: "?remindme", f: b.processGetReminders, desc: "DMs you a list of your reminders."},
-	//	{key: "-remindme", f: b.processDeleteReminder, desc: "Deletes a reminder by ID."},
+func (b *Bot) handleRemindCommand(s *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
+	switch i.ApplicationCommandData().Options[0].Name {
+	case "add":
+		return b.processNewReminder(i.Interaction.Member.User.ID, i.ApplicationCommandData().Options[0].Options[0].Value.(string))
+	case "delete":
+		reminders, ferdaErr := b.getReminders(i.Interaction.Member.User.ID)
+		if !ferdaErr.Success() {
+			return ferdaErr
+		}
+
+		selectedOption, ok := i.ApplicationCommandData().Options[0].Options[0].Value.(string)
+		if !ok || selectedOption == "" {
+			choices := []*discordgo.ApplicationCommandOptionChoice{}
+			for _, reminder := range reminders {
+				choices = append(choices, &discordgo.ApplicationCommandOptionChoice{
+					Name:  reminder.Message,
+					Value: strconv.Itoa(int(reminder.ID)),
+				})
+			}
+
+			err := s.InteractionRespond(i.Interaction, &discordgo.InteractionResponse{
+				Type: discordgo.InteractionApplicationCommandAutocompleteResult,
+				Data: &discordgo.InteractionResponseData{
+					Choices: choices,
+				},
+			})
+			if err != nil {
+				_, _ = fmt.Fprintln(os.Stderr, "error responding to discord command, %w", err)
+			}
+
+			return ResponseHandled
+		}
+
+		return b.processDeleteReminder(i.Interaction.Member.User.ID, selectedOption)
+	case "list":
+		return b.processListReminders(i.Interaction.Member.User.ID)
+	}
 
 	return DontLog
 }
 
-var remindCommand = &discordgo.ApplicationCommand{}
+var remindCommand = &discordgo.ApplicationCommand{
+	Name:        "remind",
+	Description: "Manage reminders.",
+	Version:     "0.0.1",
+	Type:        discordgo.ChatApplicationCommand,
+	Options: []*discordgo.ApplicationCommandOption{
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "add",
+			Description: "Add a new reminder.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:        discordgo.ApplicationCommandOptionString,
+					Name:        "time",
+					Description: "Time for your new reminder. Ex: 3Y2M5d10h14m20s",
+					Required:    true,
+				},
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "delete",
+			Description: "Delete a reminder by id.",
+			Options: []*discordgo.ApplicationCommandOption{
+				{
+					Type:         discordgo.ApplicationCommandOptionString,
+					Name:         "id",
+					Description:  "Reminder id",
+					Autocomplete: true,
+					Required:     true,
+				},
+			},
+		},
+		{
+			Type:        discordgo.ApplicationCommandOptionSubCommand,
+			Name:        "list",
+			Description: "List your reminders",
+		},
+	},
+}

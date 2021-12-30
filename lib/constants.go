@@ -52,6 +52,7 @@ var (
 	DiceHeader          = FerdaSuccess("Rolling dice:", "Rolling Dice:").Finalize()
 	ReminderHeader      = FerdaSuccess("Here's your reminders:", "Reminder Message Sent").Finalize()
 	OnlyPong            = FerdaSuccess("Pong!", "Pong!").Finalize()
+	CheckYourDMs        = FerdaSuccess("A message was sent to you directly.", "").Finalize()
 	//RoutesFinished      = FerdaLogOnly("Routes finished setup without error.").SetSuccess().Finalize()
 
 	// Pre-Finalized Failure
@@ -60,5 +61,6 @@ var (
 	TooManyDiceToRoll   = FerdaFailure("You can't roll that many dice.", "User wanted to roll too many dice.").SetFail().Finalize()
 	FromChannelNotFound = FerdaLogOnly("From Channel not Found").SetFail().Finalize()
 
-	DontLog = FerdaActionBuilder{DontLog: true}.Finalize()
+	DontLog         = FerdaActionBuilder{DontLog: true}.Finalize()
+	ResponseHandled = FerdaActionBuilder{ResponseHandled: true}.Finalize()
 )

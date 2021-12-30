@@ -4,11 +4,9 @@ import (
 	"math/rand"
 	"strings"
 	"time"
-
-	"github.com/bwmarrin/discordgo"
 )
 
-func (b *Bot) processChoice(_ *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processChoice(trimmedText string) FerdaAction {
 	rand.Seed(time.Now().UnixNano())
 
 	// Split the args

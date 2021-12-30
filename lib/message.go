@@ -8,10 +8,11 @@ type FerdaAction struct {
 	LogText     string `json:"log_text"`
 
 	// flags
-	DontLog    bool
-	LogOnly    bool
-	success    bool
-	dbNotFound bool
+	DontLog         bool
+	LogOnly         bool
+	success         bool
+	dbNotFound      bool
+	ResponseHandled bool
 }
 
 // FerdaActionBuilder lets you build a ferda action
@@ -23,10 +24,11 @@ type FerdaActionBuilder struct {
 	logTextFormat     string
 
 	// flags
-	DontLog    bool
-	Success    bool
-	LogOnly    bool
-	DBNotFound bool
+	DontLog         bool
+	Success         bool
+	LogOnly         bool
+	DBNotFound      bool
+	ResponseHandled bool
 }
 
 // FerdaSuccess returns a success FerdaAction
