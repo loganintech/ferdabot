@@ -1,17 +1,11 @@
-
-silent:
-	docker-compose -f docker-compose.yml up --detach
-
-up:
-	docker-compose -f docker-compose.yml up
-
 down:
-	docker-compose -f docker-compose.yml down
+	docker compose down
 
 rebuild:
-	docker-compose build
-	docker-compose -f docker-compose.yml up
+	docker compose down; docker compose build; docker compose up -d
 
-rebuildsilent:
-	docker-compose build
-	docker-compose -f docker-compose.yml up --detach
+rebuild/debug:
+	docker compose -f docker-compose-debug.yml down; docker compose -f docker-compose-debug.yml build; docker compose -f docker-compose-debug.yml up -d
+
+rebuild/prod:
+	docker compose -f docker-compose-prod.yml down && docker compose -f docker-compose-prod.yml build && docker compose -f docker-compose-prod.yml up -d

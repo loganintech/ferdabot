@@ -14,3 +14,12 @@ func (b *Bot) getUserFromFirstWord(trimmedText string) string {
 	// And return it
 	return foundString
 }
+
+func stringListContains(needle string, haystack []string) bool {
+	for _, val := range haystack {
+		if strings.EqualFold(val, needle) {
+			return true
+		}
+	}
+	return false
+}

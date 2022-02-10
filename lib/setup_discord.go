@@ -8,6 +8,17 @@ import (
 	"github.com/bwmarrin/discordgo"
 )
 
+const MODBOT_GREEN int = 0x4DF564
+const MODBOT_WARNING int = 0xFFC941
+const MODBOT_BLUE int = 0x448FFF
+const MODBOT_RED int = 0xFC0314
+
+var onlyShowSenderFlag uint64 = 1 << 6
+
+func (b *Bot) buttonHandlers(s *discordgo.Session, i *discordgo.Interaction) {
+	b.handleVoteResponse(s, i)
+}
+
 func (b *Bot) setupDiscord() (func(), error) {
 	token := os.Getenv("DISCORD_TOKEN")
 	if token == "" {
@@ -27,14 +38,26 @@ func (b *Bot) setupDiscord() (func(), error) {
 	b.discord = dg
 
 	applicationCommandHandlers := map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate) Action{
-		"dice":   b.handleRollDiceCommand,
-		"choice": b.handleChoiceCommand,
-		"ping":   b.handlePingCommand,
-		"remind": b.handleRemindCommand,
-		"ferda":  b.handleFerdaCommand,
+		diceCommand.Name:   b.handleRollDiceCommand,
+		choiceCommand.Name: b.handleChoiceCommand,
+		pingCommand.Name:   b.handlePingCommand,
+		remindCommand.Name: b.handleRemindCommand,
+		ferdaCommand.Name:  b.handleFerdaCommand,
 	}
 
 	b.discord.AddHandler(func(s *discordgo.Session, i *discordgo.InteractionCreate) {
+
+		if i.Interaction.Type == discordgo.InteractionMessageComponent {
+			b.buttonHandlers(s, i.Interaction)
+			return
+		}
+
+		applicationData := i.ApplicationCommandData()
+		if stringListContains(applicationData.Name, []string{voteCommand.Name, yesnoVoteMenuOption.Name}) {
+			b.handleVoteCommand(s, i)
+			return
+		}
+
 		if handler, ok := applicationCommandHandlers[i.ApplicationCommandData().Name]; ok {
 			respondWith := "Unknown error, please contact Logan (JewsOfHazard)"
 			action := handler(s, i)
@@ -67,23 +90,25 @@ func (b *Bot) setupDiscord() (func(), error) {
 		return nil, fmt.Errorf("Couldn't open discord connection, %s\n", conErr)
 	}
 
-	if _, err := b.discord.ApplicationCommandBulkOverwrite(b.discord.State.Ready.User.ID, os.Getenv("DISCORD_GUILD_ID"), []*discordgo.ApplicationCommand{
+	if _, err := b.discord.ApplicationCommandBulkOverwrite(b.discord.State.Ready.User.ID, "", []*discordgo.ApplicationCommand{
 		diceCommand,
 		choiceCommand,
 		pingCommand,
 		//ferdaCommand,
 		remindCommand,
+		yesnoVoteMenuOption,
+		voteCommand,
 	}); err != nil {
 		return nil, err
 	}
 
 	return func() {
-		created, err := b.discord.ApplicationCommands(b.discord.State.Ready.User.ID, os.Getenv("DISCORD_GUILD_ID"))
+		created, err := b.discord.ApplicationCommands(b.discord.State.Ready.User.ID, "")
 		if err != nil {
 			_, _ = fmt.Fprintln(os.Stderr, "couldn't get discord commands, %w", err)
 		}
 		for _, route := range created {
-			if err := b.discord.ApplicationCommandDelete(b.discord.State.Ready.User.ID, os.Getenv("DISCORD_GUILD_ID"), route.ID); err != nil {
+			if err := b.discord.ApplicationCommandDelete(b.discord.State.Ready.User.ID, "", route.ID); err != nil {
 				_, _ = fmt.Fprintln(os.Stderr, "couldn't delete discord commands, %w", err)
 			}
 		}
@@ -143,7 +168,7 @@ var pingCommand = &discordgo.ApplicationCommand{
 
 func (b *Bot) handleFerdaCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) Action {
 
-	//	{key: "+ferda", f: b.processNewFerda, desc: "Add a new ferda with a reason. Ex: `+ferda @Logan for creating ferdabot.`"},
+	//{key: "+ferda", f: b.processNewFerda, desc: "Add a new ferda with a reason. Ex: `+ferda @Logan for creating ferdabot.`"},
 	//	{key: "?ferda", f: b.processGetFerda, desc: "Get a ferda for a person. Ex: `?ferda @Logan`"},
 	//	{key: "-ferda", f: b.processDeleteFerda, desc: "Remove a ferda by its ID: `-ferda 7`"},
 	//	{key: "?bigferda", f: b.processDetailedGetFerda, desc: "Get a detailed ferda for a person. Ex: `?bigferda @Logan`"},
