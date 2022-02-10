@@ -13,7 +13,7 @@ import (
 var diceRegex = regexp.MustCompile("([0-9]*)[dD]([0-9]*)[+]?([0-9]+)?")
 
 // processDice processes the dice roll command
-func (b *Bot) processDice(trimmedText string) FerdaAction {
+func (b *Bot) processDice(trimmedText string) Action {
 	// Split the args
 	args := strings.Split(trimmedText, " ")
 	// Validate the arguments
@@ -48,8 +48,8 @@ func (b *Bot) processDice(trimmedText string) FerdaAction {
 	return diceMsg
 }
 
-// processDice returns a FerdaAction based on dice rolls
-func processDice(diceText string, limit int64) FerdaAction {
+// processDice returns a Action based on dice rolls
+func processDice(diceText string, limit int64) Action {
 	// Seed the random generator
 	rand.Seed(time.Now().UnixNano())
 	args := strings.Split(diceText, " ")
@@ -64,7 +64,7 @@ func processDice(diceText string, limit int64) FerdaAction {
 	}
 
 	// Create a dice body
-	var diceBody *FerdaAction = nil
+	var diceBody *Action = nil
 	for _, match := range found {
 		// If the found match is too short, return bad format
 		if len(match) < 3 {
@@ -101,7 +101,7 @@ func processDice(diceText string, limit int64) FerdaAction {
 		}
 		valStr := strings.Join(vals, ",")
 		newBody := DiceBody.RenderDiscordText(count, sides, addTxt, valStr).RenderLogText(count, sides, addTxt, valStr).Finalize()
-		// Create a FerdaAction with the results
+		// Create a Action with the results
 		if diceBody == nil {
 			diceBody = &newBody
 		} else {

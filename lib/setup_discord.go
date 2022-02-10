@@ -26,7 +26,7 @@ func (b *Bot) setupDiscord() (func(), error) {
 	dg.Identify.Intents = discordgo.MakeIntent(discordgo.IntentsGuildMessages | discordgo.IntentsDirectMessages)
 	b.discord = dg
 
-	applicationCommandHandlers := map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction{
+	applicationCommandHandlers := map[string]func(s *discordgo.Session, i *discordgo.InteractionCreate) Action{
 		"dice":   b.handleRollDiceCommand,
 		"choice": b.handleChoiceCommand,
 		"ping":   b.handlePingCommand,
@@ -92,7 +92,7 @@ func (b *Bot) setupDiscord() (func(), error) {
 	}, nil
 }
 
-func (b *Bot) handleRollDiceCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
+func (b *Bot) handleRollDiceCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) Action {
 	return b.processDice(i.ApplicationCommandData().Options[0].Value.(string))
 }
 
@@ -111,7 +111,7 @@ var diceCommand = &discordgo.ApplicationCommand{
 	},
 }
 
-func (b *Bot) handleChoiceCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
+func (b *Bot) handleChoiceCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) Action {
 	return b.processChoice(i.ApplicationCommandData().Options[0].Value.(string))
 }
 
@@ -130,7 +130,7 @@ var choiceCommand = &discordgo.ApplicationCommand{
 	},
 }
 
-func (b *Bot) handlePingCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
+func (b *Bot) handlePingCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) Action {
 	return b.processPing(i.Message)
 }
 
@@ -141,7 +141,7 @@ var pingCommand = &discordgo.ApplicationCommand{
 	Type:        discordgo.ChatApplicationCommand,
 }
 
-func (b *Bot) handleFerdaCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
+func (b *Bot) handleFerdaCommand(_ *discordgo.Session, i *discordgo.InteractionCreate) Action {
 
 	//	{key: "+ferda", f: b.processNewFerda, desc: "Add a new ferda with a reason. Ex: `+ferda @Logan for creating ferdabot.`"},
 	//	{key: "?ferda", f: b.processGetFerda, desc: "Get a ferda for a person. Ex: `?ferda @Logan`"},
@@ -153,7 +153,7 @@ func (b *Bot) handleFerdaCommand(_ *discordgo.Session, i *discordgo.InteractionC
 
 var ferdaCommand = &discordgo.ApplicationCommand{}
 
-func (b *Bot) handleRemindCommand(s *discordgo.Session, i *discordgo.InteractionCreate) FerdaAction {
+func (b *Bot) handleRemindCommand(s *discordgo.Session, i *discordgo.InteractionCreate) Action {
 	switch i.ApplicationCommandData().Options[0].Name {
 	case "add":
 		return b.processNewReminder(i.Interaction.Member.User.ID, i.ApplicationCommandData().Options[0].Options[0].Value.(string))

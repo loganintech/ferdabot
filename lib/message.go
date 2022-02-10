@@ -2,8 +2,8 @@ package ferdabot
 
 import "fmt"
 
-// FerdaAction represents a finalized Action
-type FerdaAction struct {
+// Action represents a finalized Action
+type Action struct {
 	DiscordText string `json:"discord_text"`
 	LogText     string `json:"log_text"`
 
@@ -15,8 +15,8 @@ type FerdaAction struct {
 	ResponseHandled bool
 }
 
-// FerdaActionBuilder lets you build a ferda action
-type FerdaActionBuilder struct {
+// ActionBuilder lets you build a ferda action
+type ActionBuilder struct {
 	// text data
 	discordText       string
 	discordTextFormat string
@@ -31,26 +31,26 @@ type FerdaActionBuilder struct {
 	ResponseHandled bool
 }
 
-// FerdaSuccess returns a success FerdaAction
-func FerdaSuccess(dText, lText string) FerdaActionBuilder {
+// ActionSuccess returns a success Action
+func ActionSuccess(dText, lText string) ActionBuilder {
 	return newFerdaAction(dText, lText).SetSuccess()
 }
 
-// FerdaFailure returns a fail FerdaAction
-func FerdaFailure(dText, lText string) FerdaActionBuilder {
+// ActionFailure returns a fail Action
+func ActionFailure(dText, lText string) ActionBuilder {
 	return newFerdaAction(dText, lText).SetFail()
 }
 
-// FerdaLogOnly returns a log only FerdaAction
-func FerdaLogOnly(lText string) FerdaActionBuilder {
+// FerdaLogOnly returns a log only Action
+func FerdaLogOnly(lText string) ActionBuilder {
 	a := newFerdaAction("", lText)
 	a.LogOnly = true
 	return a
 }
 
-// newFerdaAction lets you set a basic FerdaAction
-func newFerdaAction(dText, lText string) FerdaActionBuilder {
-	return FerdaActionBuilder{
+// newFerdaAction lets you set a basic Action
+func newFerdaAction(dText, lText string) ActionBuilder {
+	return ActionBuilder{
 		Success:           false,
 		discordTextFormat: dText,
 		logTextFormat:     lText,
@@ -59,51 +59,51 @@ func newFerdaAction(dText, lText string) FerdaActionBuilder {
 	}
 }
 
-// SetSuccess returns an identical FerdaAction with the success set to true
-func (a FerdaActionBuilder) SetSuccess() FerdaActionBuilder {
+// SetSuccess returns an identical Action with the success set to true
+func (a ActionBuilder) SetSuccess() ActionBuilder {
 	a.Success = true
 	return a
 }
 
-// SetFail returns an identical FerdaAction with the success set to false
-func (a FerdaActionBuilder) SetFail() FerdaActionBuilder {
+// SetFail returns an identical Action with the success set to false
+func (a ActionBuilder) SetFail() ActionBuilder {
 	a.Success = false
 	return a
 }
 
-// SetFail returns an identical FerdaAction with the success set to false
-func (a FerdaActionBuilder) SetLogOnly(val bool) FerdaActionBuilder {
+// SetLogOnly returns an identical Action with the log only set to the input
+func (a ActionBuilder) SetLogOnly(val bool) ActionBuilder {
 	a.LogOnly = val
 	return a
 }
 
 // SetDBNotFound sets whether this is a DB Not Found error
-func (a FerdaActionBuilder) SetDBNotFound() FerdaActionBuilder {
+func (a ActionBuilder) SetDBNotFound() ActionBuilder {
 	a.DBNotFound = true
 	return a
 }
 
 // RenderDiscordText formats the discordTextFormat to discordText
-func (a FerdaActionBuilder) RenderDiscordText(d ...interface{}) FerdaActionBuilder {
+func (a ActionBuilder) RenderDiscordText(d ...interface{}) ActionBuilder {
 	a.discordText = fmt.Sprintf(a.discordTextFormat, d...)
 	return a
 }
 
 // RenderLogText formats the logTextFormat to logText
-func (a FerdaActionBuilder) RenderLogText(l ...interface{}) FerdaActionBuilder {
+func (a ActionBuilder) RenderLogText(l ...interface{}) ActionBuilder {
 	a.logText = fmt.Sprintf(a.logTextFormat, l...)
 	return a
 }
 
-// Finalize consumes the FerdaActionBuilder to return a finalized FerdaAction
-func (a FerdaActionBuilder) Finalize() FerdaAction {
+// Finalize consumes the ActionBuilder to return a finalized Action
+func (a ActionBuilder) Finalize() Action {
 	if a.discordText == "" {
 		a.discordText = a.discordTextFormat
 	}
 	if a.logText == "" {
 		a.logText = a.logTextFormat
 	}
-	return FerdaAction{
+	return Action{
 		DiscordText: a.discordText,
 		DontLog:     a.DontLog,
 		LogOnly:     a.LogOnly,
@@ -113,18 +113,18 @@ func (a FerdaActionBuilder) Finalize() FerdaAction {
 	}
 }
 
-// Finalize on a FerdaAction does nothing
-func (a FerdaAction) Finalize() FerdaAction {
+// Finalize on a Action does nothing
+func (a Action) Finalize() Action {
 	return a
 }
 
-// Success on a FerdaAction returns whether it was a success
-func (a FerdaAction) Success() bool {
+// Success on a Action returns whether it was a success
+func (a Action) Success() bool {
 	return a.success
 }
 
-// CombineActions returns a FerdaAction with the messages combined
-func (a FerdaAction) CombineActions(other FerdaAction) FerdaAction {
+// CombineActions returns a Action with the messages combined
+func (a Action) CombineActions(other Action) Action {
 	a.LogText = a.LogText + "\n" + other.LogText
 	a.LogOnly = a.LogOnly && other.LogOnly
 	a.DiscordText = a.DiscordText + "\n" + other.DiscordText
@@ -133,12 +133,12 @@ func (a FerdaAction) CombineActions(other FerdaAction) FerdaAction {
 	return a
 }
 
-// Equals returns the similarity between two FerdaAction's
-func (a FerdaAction) Equals(other FerdaAction) bool {
+// Equals returns the similarity between two Action's
+func (a Action) Equals(other Action) bool {
 	return a.DiscordText == other.DiscordText && a.LogText == other.LogText && a.LogOnly == other.LogOnly
 }
 
-// DBNotFound returns the similarity between two FerdaAction's
-func (a FerdaAction) DBNotFound() bool {
+// DBNotFound returns the similarity between two Action's
+func (a Action) DBNotFound() bool {
 	return a.dbNotFound
 }

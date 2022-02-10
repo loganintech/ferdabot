@@ -17,7 +17,7 @@ type Reminder struct {
 	Message   string    `db:"message"`
 }
 
-func (b *Bot) processDeleteReminder(authorID string, trimmedText string) FerdaAction {
+func (b *Bot) processDeleteReminder(authorID string, trimmedText string) Action {
 	// Split into args
 	split := strings.Split(trimmedText, " ")
 	// And complain if we're missing an arg
@@ -46,7 +46,7 @@ func (b *Bot) processDeleteReminder(authorID string, trimmedText string) FerdaAc
 	return DeletedItem.RenderDiscordText("reminder", authorID, foundID).RenderLogText(foundID).Finalize()
 }
 
-func (b *Bot) processListReminders(authorID string) FerdaAction {
+func (b *Bot) processListReminders(authorID string) Action {
 	reminders, act := b.getReminders(authorID)
 	if !act.Success() {
 		return act
@@ -73,7 +73,7 @@ func (b *Bot) processListReminders(authorID string) FerdaAction {
 	return CheckYourDMs
 }
 
-func (b *Bot) processNewReminder(authorID string, trimmedText string) FerdaAction {
+func (b *Bot) processNewReminder(authorID string, trimmedText string) Action {
 	args := strings.Split(trimmedText, " ")
 
 	if len(args) < 2 {
@@ -171,7 +171,7 @@ func monthFromInt(month int) time.Month {
 	return time.January
 }
 
-func (b *Bot) reminderLoop() FerdaAction {
+func (b *Bot) reminderLoop() Action {
 	fiveSeconds, _ := time.ParseDuration("5s")
 	for {
 		reminders, action := b.getOverdueReminders()

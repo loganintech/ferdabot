@@ -13,7 +13,7 @@ CREATE INDEX creatorid_idx ON ferda (creatorid);
 CREATE TABLE config
 (
     key TEXT PRIMARY KEY NOT NULL UNIQUE,
-    val TEXT NOT NULL
+    val TEXT             NOT NULL
 );
 
 CREATE TABLE reminder

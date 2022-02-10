@@ -1,12 +1,13 @@
 package ferdabot
 
 import (
-	"github.com/jmoiron/sqlx"
 	"time"
+
+	"github.com/jmoiron/sqlx"
 )
 
 // getFerdaEntry takes a foundUser, userID, userName to return a random FerdaEntry
-func (b *Bot) getFerdaEntry(foundUser, userID, userName string) (FerdaEntry, FerdaAction) {
+func (b *Bot) getFerdaEntry(foundUser, userID, userName string) (FerdaEntry, Action) {
 	ferdaEntry := FerdaEntry{}
 	dbErr := b.db.Get(
 		&ferdaEntry,
@@ -24,15 +25,15 @@ func (b *Bot) getFerdaEntry(foundUser, userID, userName string) (FerdaEntry, Fer
 		return ferdaEntry, DBGetErr.RenderLogText(dbErr).Finalize()
 	}
 
-	// Return the found entry and DBSuccess FerdaAction
+	// Return the found entry and DBSuccess Action
 	return ferdaEntry, DBSuccess.Finalize()
 }
 
 // insertFerdaEntry inserts a new FerdaEntry into the database
-func (b *Bot) insertFerdaEntry(foundString, reason, creatorID string) FerdaAction {
+func (b *Bot) insertFerdaEntry(foundString, reason, creatorID string) Action {
 	// Named Execution insert to the ferda table
 	res, dbErr := b.db.NamedExec(
-		`INSERT INTO ferda (userid, time, reason, CreatorID) VALUES (:userid, :time, :reason, :CreatorID)`,
+		`INSERT INTO ferda (userid, time, reason, creatorid) VALUES (:userid, :time, :reason, :CreatorID)`,
 		map[string]interface{}{
 			"userid": foundString,
 			// Adjust for local time of bot
@@ -48,17 +49,17 @@ func (b *Bot) insertFerdaEntry(foundString, reason, creatorID string) FerdaActio
 
 	// Get the rows affected
 	count, _ := res.RowsAffected()
-	// If the count is 0, return NoRowDB FerdaAction
+	// If the count is 0, return NoRowDB Action
 	if count == 0 {
 		return NoRowDBErr
 	}
 
-	// return DBSuccess FerdaAction
+	// return DBSuccess Action
 	return DBSuccess
 }
 
-// ferdaSearch takes the foundUser, userID, userName, and a search string to return a list of FerdaEntries and FerdaAction
-func (b *Bot) ferdaSearch(foundUser, userID, userName, searchText string) ([]FerdaEntry, FerdaAction) {
+// ferdaSearch takes the foundUser, userID, userName, and a search string to return a list of FerdaEntries and Action
+func (b *Bot) ferdaSearch(foundUser, userID, userName, searchText string) ([]FerdaEntry, Action) {
 	var ferdaEntry []FerdaEntry
 	// Select matchinf Ferdas
 	dbErr := b.db.Select(
@@ -87,7 +88,7 @@ func (b *Bot) ferdaSearch(foundUser, userID, userName, searchText string) ([]Fer
 }
 
 // deleteFerda removes a ferda from the database
-func (b *Bot) deleteFerda(foundID string) FerdaAction {
+func (b *Bot) deleteFerda(foundID string) Action {
 	// Find a ferda where the ID is supplied
 	res, dbErr := b.db.NamedExec(
 		`DELETE FROM ferda WHERE id = :ferdaid`,
@@ -109,7 +110,7 @@ func (b *Bot) deleteFerda(foundID string) FerdaAction {
 }
 
 // insertConfigEntry inserts something into the config table
-func (b *Bot) insertConfigEntry(param, val string) FerdaAction {
+func (b *Bot) insertConfigEntry(param, val string) Action {
 	// Named Execution insert to the ferda table
 	res, dbErr := b.db.NamedExec(
 		`INSERT INTO config (key, val) VALUES (:key, :val)`,
@@ -126,17 +127,17 @@ func (b *Bot) insertConfigEntry(param, val string) FerdaAction {
 
 	// Get the rows affected
 	count, _ := res.RowsAffected()
-	// If the count is 0, return NoRowDB FerdaAction
+	// If the count is 0, return NoRowDB Action
 	if count == 0 {
 		return NoRowDBErr
 	}
 
-	// return DBSuccess FerdaAction
+	// return DBSuccess Action
 	return DBSuccess
 }
 
 // getConfigEntry returns a config entry based on its param name
-func (b *Bot) getConfigEntry(param string) (ConfigEntry, FerdaAction) {
+func (b *Bot) getConfigEntry(param string) (ConfigEntry, Action) {
 	entry := ConfigEntry{}
 	dbErr := b.db.Get(
 		&entry,
@@ -154,12 +155,12 @@ func (b *Bot) getConfigEntry(param string) (ConfigEntry, FerdaAction) {
 		return entry, DBGetErr.RenderLogText(dbErr).Finalize()
 	}
 
-	// Return the found entry and DBSuccess FerdaAction
+	// Return the found entry and DBSuccess Action
 	return entry, DBSuccess
 }
 
 // newReminder sets a new reminder
-func (b *Bot) newReminder(remind time.Time, userid string, message string) FerdaAction {
+func (b *Bot) newReminder(remind time.Time, userid string, message string) Action {
 	// Named Execution insert to the ferda table
 	res, dbErr := b.db.NamedExec(
 		`INSERT INTO reminder (creatorid, time, message) VALUES (:creatorid, :time, :message)`,
@@ -176,17 +177,17 @@ func (b *Bot) newReminder(remind time.Time, userid string, message string) Ferda
 
 	// Get the rows affected
 	count, _ := res.RowsAffected()
-	// If the count is 0, return NoRowDB FerdaAction
+	// If the count is 0, return NoRowDB Action
 	if count == 0 {
 		return NoRowDBErr
 	}
 
-	// return DBSuccess FerdaAction
+	// return DBSuccess Action
 	return DBSuccess
 }
 
 // getOverdueReminders returns a list of reminders that should be reminded, then deleted
-func (b *Bot) getOverdueReminders() ([]Reminder, FerdaAction) {
+func (b *Bot) getOverdueReminders() ([]Reminder, Action) {
 	var reminders []Reminder
 	dbErr := b.db.Select(
 		&reminders,
@@ -198,12 +199,12 @@ func (b *Bot) getOverdueReminders() ([]Reminder, FerdaAction) {
 		return reminders, DBGetErr.RenderLogText(dbErr).Finalize()
 	}
 
-	// Return the found entry and DBSuccess FerdaAction
+	// Return the found entry and DBSuccess Action
 	return reminders, DBSuccess.Finalize()
 }
 
 // delete returns a list of reminders that should be reminded, then deleted
-func (b *Bot) deleteOverdueReminders(ids []int64) FerdaAction {
+func (b *Bot) deleteOverdueReminders(ids []int64) Action {
 	if len(ids) == 0 {
 		return DBSuccess.Finalize()
 	}
@@ -228,7 +229,7 @@ func (b *Bot) deleteOverdueReminders(ids []int64) FerdaAction {
 }
 
 // getReminders loads a list of reminders based on the user
-func (b *Bot) getReminders(userid string) ([]Reminder, FerdaAction) {
+func (b *Bot) getReminders(userid string) ([]Reminder, Action) {
 	var reminders []Reminder
 	dbErr := b.db.Select(&reminders, `SELECT * FROM reminder WHERE creatorid = $1`, userid)
 	// If the dbErr isn't nil
@@ -242,12 +243,12 @@ func (b *Bot) getReminders(userid string) ([]Reminder, FerdaAction) {
 		return reminders, DBGetErr.RenderLogText(dbErr).Finalize()
 	}
 
-	// Return the found reminders and DBSuccess FerdaAction
+	// Return the found reminders and DBSuccess Action
 	return reminders, DBSuccess
 }
 
 // getReminder loads a reminder based on its ID
-func (b *Bot) getReminder(foundID string) (Reminder, FerdaAction) {
+func (b *Bot) getReminder(foundID string) (Reminder, Action) {
 	var reminder Reminder
 	dbErr := b.db.Get(&reminder, `SELECT * FROM reminder WHERE id = $1`, foundID)
 	// If the dbErr isn't nil
@@ -261,12 +262,12 @@ func (b *Bot) getReminder(foundID string) (Reminder, FerdaAction) {
 		return reminder, DBGetErr.RenderLogText(dbErr).Finalize()
 	}
 
-	// Return the found reminder and DBSuccess FerdaAction
+	// Return the found reminder and DBSuccess Action
 	return reminder, DBSuccess
 }
 
 // deleteReminder deletes a reminder
-func (b *Bot) deleteReminder(reminderID string) FerdaAction {
+func (b *Bot) deleteReminder(reminderID string) Action {
 	// Delete a reminder based on its ID
 	res, dbErr := b.db.NamedExec(
 		`DELETE FROM reminder WHERE id = :reminderid`,

@@ -107,7 +107,7 @@ func (b *Bot) Run() error {
 	return nil
 }
 
-func (b *Bot) ProcessFerdaAction(act FerdaAction, s *discordgo.Session, m *discordgo.Message) {
+func (b *Bot) ProcessFerdaAction(act Action, s *discordgo.Session, m *discordgo.Message) {
 	if act.DontLog {
 		return
 	}

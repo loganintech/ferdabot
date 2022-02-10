@@ -6,7 +6,7 @@ import (
 	"time"
 )
 
-func (b *Bot) processChoice(trimmedText string) FerdaAction {
+func (b *Bot) processChoice(trimmedText string) Action {
 	rand.Seed(time.Now().UnixNano())
 
 	// Split the args

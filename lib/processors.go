@@ -9,7 +9,7 @@ import (
 )
 
 // processEcho processes an echo command
-func (b *Bot) processEcho(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processEcho(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) Action {
 	// Make sure they aren't trying to echo a banned phrase
 	for _, phrase := range BannedEchoPhrases {
 		// If it does have one, make fun of them
@@ -23,7 +23,7 @@ func (b *Bot) processEcho(_ *discordgo.Session, m *discordgo.MessageCreate, trim
 }
 
 // processNewFerda processes a new ferda Message
-func (b *Bot) processNewFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processNewFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) Action {
 	// Split the string
 	split := strings.Split(trimmedText, " ")
 	// get our first userid
@@ -44,7 +44,7 @@ func (b *Bot) processNewFerda(_ *discordgo.Session, m *discordgo.MessageCreate, 
 }
 
 // processGetFerda processes a get ferda Message
-func (b *Bot) processGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) Action {
 	// Get the found user
 	foundUser := b.getUserFromFirstWord(trimmedText)
 	// Load extra details about them
@@ -65,7 +65,7 @@ func (b *Bot) processGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, 
 }
 
 // processDetailedGetFerda processes a detailed getferda Message
-func (b *Bot) processDetailedGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processDetailedGetFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) Action {
 	// Get the user
 	foundUser := b.getUserFromFirstWord(trimmedText)
 	// Load more info from discord
@@ -85,7 +85,7 @@ func (b *Bot) processDetailedGetFerda(s *discordgo.Session, _ *discordgo.Message
 }
 
 // processDeleteFerda processes a remove ferda Message
-func (b *Bot) processDeleteFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processDeleteFerda(_ *discordgo.Session, m *discordgo.MessageCreate, trimmedText string) Action {
 	// Split into args
 	split := strings.Split(trimmedText, " ")
 	// And complain if we're missing an arg
@@ -109,10 +109,10 @@ func (b *Bot) processDeleteFerda(_ *discordgo.Session, m *discordgo.MessageCreat
 }
 
 // processSearchFerda searches for a ferda given some text
-func (b *Bot) processSearchFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) FerdaAction {
+func (b *Bot) processSearchFerda(s *discordgo.Session, _ *discordgo.MessageCreate, trimmedText string) Action {
 	// Ensure there's at least a user and a search string
 	data := strings.Split(trimmedText, " ")
-	// If there isn't enough args, return NotEnoughArguments FerdaAction
+	// If there isn't enough args, return NotEnoughArguments Action
 	if len(data) < 2 {
 		return NotEnoughArguments.RenderDiscordText(2).RenderLogText("ferdasearch").Finalize()
 	}
@@ -149,7 +149,7 @@ func (b *Bot) processSearchFerda(s *discordgo.Session, _ *discordgo.MessageCreat
 	return ferdaDetails
 }
 
-func (b *Bot) processPing(m *discordgo.Message) FerdaAction {
+func (b *Bot) processPing(m *discordgo.Message) Action {
 	if m == nil {
 		return OnlyPong
 	}
